@@ -6,14 +6,28 @@ import { usePathname } from "next/navigation";
 import { NAV_ITEMS, NavItem } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useState, useEffect } from 'react';
 
 export function BottomNavBar() {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const isActive = (item: NavItem) => {
     if (item.match) return item.match(pathname);
     return item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
   };
+
+  if (!mounted) {
+    // Render nothing or a non-styled placeholder on the server and during initial client render
+    // This avoids the nav element with potentially mismatched classes from being part of the hydration diff
+    return null; 
+    // Example placeholder if needed for layout spacing, though null is usually fine:
+    // return <div className="fixed bottom-4 left-1/2 -translate-x-1/2 h-[68px] w-auto max-w-xs sm:max-w-sm md:max-w-md mx-auto z-50" />;
+  }
 
   return (
     <TooltipProvider delayDuration={100}>
