@@ -71,7 +71,7 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
         
         container.scrollLeft = Math.max(0, scrollLeftPosition);
     }
-  }, [currentMonth, habits, daysInMonth]); // Keep dependencies that trigger re-centering
+  }, [currentMonth, habits, daysInMonth]); 
 
 
   if (habits.length === 0) {
@@ -95,7 +95,7 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
         "md:rounded-lg md:border md:border-border md:bg-card md:text-card-foreground md:shadow-sm"
       )}
     >
-      <CardHeader className="flex flex-row items-center justify-between sticky left-0 bg-background md:bg-card z-20 px-4 md:px-6">
+      <CardHeader className="flex flex-row items-center justify-between sticky left-0 bg-transparent md:bg-card z-20 px-4 md:px-6">
         <div>
             <CardTitle className="font-headline text-xl">Habit Tracker</CardTitle>
             <CardDescription>{format(currentMonth, 'MMMM yyyy')}</CardDescription>
@@ -112,7 +112,7 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
       <CardContent ref={cardContentRef} className="pt-0 px-0 md:px-6 md:pb-6 flex-grow overflow-x-auto overflow-y-hidden">
           <div className="grid gap-px min-w-max" style={{ gridTemplateColumns: `minmax(100px, auto) repeat(${daysInMonth.length}, minmax(38px, 1fr))` }}>
             {/* Header Row: Habit Name */}
-            <div className="sticky left-0 z-10 bg-background md:bg-card px-1 py-1 md:px-2 border-b border-r flex items-center justify-start h-12">
+            <div className="sticky left-0 z-10 bg-transparent md:bg-card px-1 py-1 md:px-2 border-b border-r flex items-center justify-start h-12">
               <span className="font-semibold truncate hidden sm:inline-block">Habit</span>
             </div>
             {/* Header Row: Day Numbers */}
@@ -137,7 +137,7 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
               return (
                 <React.Fragment key={habit.id}>
                   <div
-                    className="sticky left-0 z-10 bg-background md:bg-card px-1 py-1 md:px-2 border-r flex items-center justify-between group min-h-[44px]"
+                    className="sticky left-0 z-10 bg-transparent md:bg-card px-1 py-1 md:px-2 border-r flex items-center justify-between group min-h-[44px]"
                     style={{ borderBottomWidth: habitIndex === habits.length -1 ? '0px' : '1px' }}
                   >
                     <div className="flex items-center overflow-hidden whitespace-nowrap w-full justify-start">
