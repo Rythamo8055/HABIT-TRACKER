@@ -3,13 +3,15 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label'; // Added import for Label
+import { Label } from '@/components/ui/label'; 
+import { cn } from '@/lib/utils';
 
 export function IntegratedLog() {
-  // In a real app, these values would come from state and be saved.
-  // For now, they are just uncontrolled Textarea components.
   return (
-    <Card className="flex-shrink-0">
+    <Card className={cn(
+      "flex-shrink-0 w-full rounded-none border-transparent shadow-none bg-transparent text-foreground",
+      "md:rounded-lg md:border md:border-border md:bg-card md:text-card-foreground md:shadow-sm"
+    )}>
       <CardHeader>
         <CardTitle className="font-headline text-xl">Integrated Log</CardTitle>
         <CardDescription>Capture your thoughts, meals, and cues.</CardDescription>

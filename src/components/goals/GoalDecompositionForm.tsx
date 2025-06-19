@@ -16,17 +16,13 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { addTaskToDate } from '@/lib/task-storage';
 import { startOfDay } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   goal: z.string().min(10, { message: "Goal description must be at least 10 characters." }).max(500, { message: "Goal description must be at most 500 characters." }),
 });
 
 type GoalDecompositionFormValues = z.infer<typeof formSchema>;
-
-// We don't use onSuccessfulDecomposition prop anymore for direct task adding.
-// interface GoalDecompositionFormProps {
-//   onSuccessfulDecomposition?: (tasks: DecomposedTask[]) => void;
-// }
 
 export function GoalDecompositionForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -85,9 +81,6 @@ export function GoalDecompositionForm() {
       }
 
       setDecomposedTasks(parsedTasks);
-      // if (parsedTasks.length > 0 && onSuccessfulDecomposition) { // Prop removed
-      //   onSuccessfulDecomposition(parsedTasks);
-      // }
        if (parsedTasks.length > 0) {
         toast({
           title: "Goal Decomposed!",
@@ -110,7 +103,10 @@ export function GoalDecompositionForm() {
   };
 
   return (
-    <Card className="w-full">
+    <Card className={cn(
+      "w-full rounded-none border-transparent shadow-none bg-transparent text-foreground",
+      "md:rounded-lg md:border md:border-border md:bg-card md:text-card-foreground md:shadow-sm"
+    )}>
       <CardHeader>
         <CardTitle className="font-headline text-lg">Decompose Your Goal</CardTitle>
         <CardDescription>Describe your high-level goal, and AI will break it down into actionable tasks.</CardDescription>
@@ -156,7 +152,7 @@ export function GoalDecompositionForm() {
         </form>
       </Form>
       {decomposedTasks && decomposedTasks.length > 0 && (
-        <div className="p-6 border-t">
+        <div className="p-6 border-t md:border-border">
           <h3 className="text-md font-semibold mb-2 font-headline">Generated Tasks:</h3>
           <ScrollArea className="h-[200px] pr-3">
             <ul className="space-y-3">
@@ -184,7 +180,7 @@ export function GoalDecompositionForm() {
         </div>
       )}
        {decomposedTasks && decomposedTasks.length === 0 && !error && (
-        <div className="p-6 border-t">
+        <div className="p-6 border-t md:border-border">
           <p className="text-muted-foreground text-sm">No tasks were generated. This might happen if the AI couldn't process the goal or if the response format was unexpected.</p>
         </div>
       )}

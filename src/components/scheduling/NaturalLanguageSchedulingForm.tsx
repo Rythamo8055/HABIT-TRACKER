@@ -13,9 +13,10 @@ import { naturalLanguageScheduling, NaturalLanguageSchedulingInput, NaturalLangu
 import type { ScheduledEventItem, CalendarEvent } from '@/lib/types';
 import { Loader2, CheckCircle, AlertTriangle, CalendarClock } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
-import { format, parse, startOfDay, isValid } from 'date-fns';
+import { format, parse, startOfDay, isValid, parseISO as dateFnsParseISO } from 'date-fns'; // Renamed to avoid conflict
 import { useToast } from '@/hooks/use-toast';
 import { addEventsToDate } from '@/lib/timeline-event-storage';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   scheduleDescription: z.string().min(10, { message: "Schedule description must be at least 10 characters." }).max(500, { message: "Schedule description must be at most 500 characters."}),
@@ -24,26 +25,20 @@ const formSchema = z.object({
 type NaturalLanguageSchedulingFormValues = z.infer<typeof formSchema>;
 
 interface NaturalLanguageSchedulingFormProps {
-  onSuccessfulScheduling?: (events: ScheduledEventItem[]) => void; // This can now be used to close dialog
+  onSuccessfulScheduling?: (events: ScheduledEventItem[]) => void;
 }
 
-// Helper to parse flexible time strings (e.g., "9 AM", "10:30 PM", "14:00", "tomorrow 5pm")
-// Tries to create a Date object. If it's for "tomorrow", it will reflect that.
-// If only time is given, it defaults to today.
 const parseFlexibleDateTime = (timeString: string, referenceDate: Date): Date | null => {
-  const now = referenceDate; // Use provided reference date (e.g., today)
+  const now = referenceDate;
   let parsedDate: Date | null = null;
 
-  // Common time formats. Add more as needed.
   const timeFormats = [
-    "h a", "ha", "h:mm a", "h:mma", // 9 AM, 9AM, 9:00 AM, 9:00AM
-    "H", "HH", "HH:mm",             // 9, 09, 14:00
+    "h a", "ha", "h:mm a", "h:mma",
+    "H", "HH", "HH:mm",
   ];
   
-  // Try parsing with date-fns, assuming timeString might be a full date or just time
-  // This is a basic attempt; more sophisticated NLP might be needed for "next Tuesday at 3"
   try {
-    const d = parseISO(timeString); // Try ISO first
+    const d = dateFnsParseISO(timeString); 
     if (isValid(d)) return d;
   } catch {}
 
@@ -51,9 +46,7 @@ const parseFlexibleDateTime = (timeString: string, referenceDate: Date): Date | 
     try {
       const d = parse(timeString, fmt, now);
       if (isValid(d)) {
-        // If only time was parsed, ensure it's on the referenceDate (today)
-        // If parse already yielded a different date (e.g. due to "tomorrow" in string if parse handled it), use that
-        if (d.getFullYear() === new Date(0).getFullYear() || format(d, 'yyyy-MM-dd') === format(new Date(0), 'yyyy-MM-dd')) { // Check if parse returned epoch or base date
+        if (d.getFullYear() === new Date(0).getFullYear() || format(d, 'yyyy-MM-dd') === format(new Date(0), 'yyyy-MM-dd')) {
              d.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
         }
         parsedDate = d;
@@ -62,14 +55,11 @@ const parseFlexibleDateTime = (timeString: string, referenceDate: Date): Date | 
     } catch {}
   }
   
-  // Rudimentary check for "tomorrow" - a more robust solution would involve NLP in the AI prompt
   if (!parsedDate && timeString.toLowerCase().includes("tomorrow")) {
     const tomorrow = new Date(now);
     tomorrow.setDate(now.getDate() + 1);
-    // Try parsing time part again with tomorrow as reference
      for (const fmt of timeFormats) {
         try {
-            // Remove "tomorrow" to parse just the time
             const timeOnlyString = timeString.replace(/tomorrow/i, '').trim();
             const d = parse(timeOnlyString, fmt, tomorrow);
             if (isValid(d)) {
@@ -80,7 +70,6 @@ const parseFlexibleDateTime = (timeString: string, referenceDate: Date): Date | 
         } catch {}
     }
   }
-
 
   return parsedDate;
 };
@@ -107,15 +96,13 @@ export function NaturalLanguageSchedulingForm({ onSuccessfulScheduling }: Natura
 
     try {
       const input: NaturalLanguageSchedulingInput = { scheduleDescription: data.scheduleDescription };
-      // It's better if the AI is prompted to return events FOR a specific date, or includes dates.
-      // For now, we assume the AI returns times, and we anchor them to 'today'.
       const result: NaturalLanguageSchedulingOutput = await naturalLanguageScheduling(input);
       
       if (!Array.isArray(result.scheduledEvents) || !result.scheduledEvents.every(e => typeof e.startTime === 'string' && typeof e.endTime === 'string' && typeof e.description === 'string')) {
         throw new Error("AI response is not in the expected format (array of {startTime, endTime, description}).");
       }
 
-      setAiScheduledEvents(result.scheduledEvents); // Display what AI returned
+      setAiScheduledEvents(result.scheduledEvents);
 
       const calendarEventsToAdd: CalendarEvent[] = [];
       for (const aiEvent of result.scheduledEvents) {
@@ -133,12 +120,11 @@ export function NaturalLanguageSchedulingForm({ onSuccessfulScheduling }: Natura
           });
         } else {
           console.warn("Could not parse event times or invalid range:", aiEvent);
-          // Optionally notify user about partially unparsed events
         }
       }
 
       if (calendarEventsToAdd.length > 0) {
-        await addEventsToDate(today, calendarEventsToAdd); // Save to today's timeline
+        await addEventsToDate(today, calendarEventsToAdd); 
         toast({
           title: "Day Scheduled!",
           description: `${calendarEventsToAdd.length} event(s) added to today's timeline.`,
@@ -157,7 +143,7 @@ export function NaturalLanguageSchedulingForm({ onSuccessfulScheduling }: Natura
         });
       }
       
-      if (onSuccessfulScheduling) { // Prop from CommandKDialog
+      if (onSuccessfulScheduling) { 
         onSuccessfulScheduling(result.scheduledEvents);
       }
 
@@ -175,17 +161,18 @@ export function NaturalLanguageSchedulingForm({ onSuccessfulScheduling }: Natura
     }
   };
 
-  // Display helper for AI's raw output
   const formatDisplayEventTime = (timeString: string) => {
-    // Try to make it slightly more readable if it's a known format, otherwise show raw
     const parsed = parseFlexibleDateTime(timeString, new Date());
-    if (parsed) return format(parsed, 'p'); // Format like "3:00 PM"
+    if (parsed) return format(parsed, 'p');
     return timeString; 
   };
 
 
   return (
-    <Card className="w-full">
+    <Card className={cn(
+      "w-full rounded-none border-transparent shadow-none bg-transparent text-foreground",
+      "md:rounded-lg md:border md:border-border md:bg-card md:text-card-foreground md:shadow-sm"
+    )}>
       <CardHeader>
         <CardTitle className="font-headline text-lg">Plan Your Day with AI</CardTitle>
         <CardDescription>Describe your day in plain English (e.g., "Team meeting 10-11am, lunch 1pm, work on report until 5pm"). AI will try to create a schedule for today.</CardDescription>
@@ -231,7 +218,7 @@ export function NaturalLanguageSchedulingForm({ onSuccessfulScheduling }: Natura
         </form>
       </Form>
       {aiScheduledEvents && aiScheduledEvents.length > 0 && (
-        <div className="p-6 border-t">
+        <div className="p-6 border-t md:border-border">
           <h3 className="text-md font-semibold mb-2 font-headline">AI Generated Output:</h3>
           <ScrollArea className="h-[200px] pr-3">
             <ul className="space-y-3">
@@ -251,7 +238,7 @@ export function NaturalLanguageSchedulingForm({ onSuccessfulScheduling }: Natura
         </div>
       )}
       {aiScheduledEvents && aiScheduledEvents.length === 0 && !error && (
-        <div className="p-6 border-t">
+        <div className="p-6 border-t md:border-border">
           <p className="text-muted-foreground text-sm">No specific events were scheduled by AI based on your input.</p>
         </div>
       )}

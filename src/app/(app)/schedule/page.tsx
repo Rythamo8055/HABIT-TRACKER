@@ -1,3 +1,4 @@
+
 import { NaturalLanguageSchedulingForm } from '@/components/scheduling/NaturalLanguageSchedulingForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Wand2 } from 'lucide-react';
@@ -12,7 +13,7 @@ export default function SchedulePage() {
         <div className="md:col-span-2">
           <NaturalLanguageSchedulingForm />
         </div>
-        <Card className="md:col-span-1">
+        <Card className="md:col-span-1 rounded-none border-transparent shadow-none bg-transparent text-foreground md:rounded-lg md:border md:border-border md:bg-card md:text-card-foreground md:shadow-sm">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
               <Wand2 className="h-6 w-6 text-primary" />
