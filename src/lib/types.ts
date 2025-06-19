@@ -34,14 +34,6 @@ export interface CalendarEvent {
   isAllDay?: boolean;
 }
 
-export interface JournalEntry {
-  id: string;
-  date: string; // YYYY-MM-DD
-  content: string;
-  type: 'rich_journal' | 'food_diary' | 'cue_tracking' | 'amwap' | 'storyworthy' | 'next_day_tasks';
-  createdAt: number; // Timestamp
-}
-
 // For AI Goal Decomposition Output (parsed from string)
 export interface DecomposedTask {
   task: string;
@@ -60,3 +52,12 @@ export type HabitCategory = {
   name: string;
   color: string; // e.g., 'red', 'blue', or a hex code like '#FF0000'
 };
+
+// Data for creating/updating calendar events
+export interface EventFormData {
+  title: string;
+  startTime: string; // Expected as YYYY-MM-DDTHH:mm
+  endTime: string;   // Expected as YYYY-MM-DDTHH:mm
+  description?: string;
+  source: CalendarEvent['source'];
+}
