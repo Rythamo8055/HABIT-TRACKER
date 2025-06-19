@@ -1,4 +1,3 @@
-
 {
   "name": "Life Architect",
   "short_name": "LifeArch",
@@ -11,14 +10,18 @@
       "purpose": "any maskable"
     },
     {
+      "src": "https://placehold.co/384x384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
       "src": "https://placehold.co/512x512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ],
-  "theme_color": "#1e1e2e",
-  "background_color": "#1e1e2e",
+  "theme_color": "#F2F2F2",
+  "background_color": "#F2F2F2",
   "display": "standalone",
   "scope": "/",
   "start_url": "/"
