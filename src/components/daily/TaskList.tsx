@@ -105,6 +105,7 @@ export function TaskList() {
     if (currentDate) {
       setIsLoading(true);
       fetchTasksForDate(currentDate).then(fetchedTasks => {
+        // Initial sample data logic (only for today, if no tasks & not loaded before)
         if (format(currentDate, 'yyyy-MM-dd') === format(startOfDay(new Date()), 'yyyy-MM-dd') && fetchedTasks.length === 0 && !localStorage.getItem(`tasks_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`)) {
           const sampleTasks: Task[] = [
             { id: 'task-1', text: 'Review PR #123', isCompleted: false, dueDate: format(currentDate, 'yyyy-MM-dd'), createdAt: Date.now() - 100000 },
@@ -112,7 +113,7 @@ export function TaskList() {
             { id: 'task-3', text: 'Follow up with Jane Doe', isCompleted: true, dueDate: format(currentDate, 'yyyy-MM-dd'), createdAt: Date.now() - 200000 },
           ];
           setTasks(sampleTasks.sort((a,b) => a.createdAt - b.createdAt));
-          localStorage.setItem(`tasks_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`, 'true');
+          localStorage.setItem(`tasks_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`, 'true'); // Mark as loaded
         } else {
           setTasks(fetchedTasks);
         }
@@ -172,10 +173,11 @@ export function TaskList() {
     const nextDay = addDays(currentDate, 1);
     
     const completedTasks = tasks.filter(task => task.isCompleted);
-    setTasks(completedTasks); 
+    setTasks(completedTasks); // Update current day's tasks to only completed ones
 
     const nextDayExistingTasks = await fetchTasksForDate(nextDay);
-    const migratedTasks = incompleteTasks.map(task => ({ ...task, dueDate: format(nextDay, 'yyyy-MM-dd'), createdAt: Date.now() }));
+    // Update dueDate for migrated tasks and give them a new creation timestamp to appear at bottom of new list
+    const migratedTasks = incompleteTasks.map(task => ({ ...task, dueDate: format(nextDay, 'yyyy-MM-dd'), createdAt: Date.now() })); 
     
     await saveTasksForDate(nextDay, [...nextDayExistingTasks, ...migratedTasks].sort((a,b) => a.createdAt - b.createdAt));
     alert(`${incompleteTasks.length} task(s) migrated to ${format(nextDay, 'MMM do')}.`);
@@ -192,7 +194,7 @@ export function TaskList() {
       setTasks((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
-        if (oldIndex === -1 || newIndex === -1) return items;
+        if (oldIndex === -1 || newIndex === -1) return items; // Should not happen
         return arrayMove(items, oldIndex, newIndex);
       });
     }
@@ -247,7 +249,7 @@ export function TaskList() {
           <p>Loading tasks...</p>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <ScrollArea className="flex-grow h-[calc(100vh-350px)]">
+            <ScrollArea className={cn("flex-grow h-[calc(100vh-350px)]", "scroll-area-hide-scrollbar")}>
               {tasks.length === 0 ? (
                 <p className="text-muted-foreground text-center py-4">No tasks for today. Add some!</p>
               ) : (

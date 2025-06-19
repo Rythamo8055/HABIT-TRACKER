@@ -71,7 +71,7 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
         
         container.scrollLeft = Math.max(0, scrollLeftPosition);
     }
-  }, [currentMonth, habits, daysInMonth]); 
+  }, [currentMonth, habits, daysInMonth]); // Rerun when month or habits change
 
 
   if (habits.length === 0) {
@@ -91,7 +91,7 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
   return (
      <Card
       className={cn(
-        "rounded-none border-transparent shadow-none bg-transparent text-foreground flex flex-col flex-grow",
+        "rounded-none border-transparent shadow-none bg-transparent text-foreground flex flex-col flex-grow", // flex-grow helps card fill space
         "md:rounded-lg md:border md:border-border md:bg-card md:text-card-foreground md:shadow-sm"
       )}
     >
@@ -109,7 +109,13 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
           </Button>
         </div>
       </CardHeader>
-      <CardContent ref={cardContentRef} className="pt-0 px-0 md:px-6 md:pb-6 flex-grow overflow-x-auto overflow-y-hidden">
+      <CardContent 
+        ref={cardContentRef} 
+        className={cn(
+          "pt-0 px-0 md:px-6 md:pb-6 flex-grow overflow-x-auto overflow-y-hidden", // Core scrolling classes
+          "no-scrollbar" // Apply the utility class to hide scrollbar
+        )}
+      >
           <div className="grid gap-px min-w-max" style={{ gridTemplateColumns: `minmax(100px, auto) repeat(${daysInMonth.length}, minmax(38px, 1fr))` }}>
             {/* Header Row: Habit Name */}
             <div className="sticky left-0 z-10 bg-transparent md:bg-card px-1 py-1 md:px-2 border-b border-r flex items-center justify-start h-12">
@@ -122,8 +128,8 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
                 ref={isToday(day) ? todayHeaderCellRef : null}
                 className={cn(
                   "p-1 text-center border-b flex flex-col items-center justify-center h-12",
-                  isToday(day) ? "bg-accent/20 text-accent-foreground" : "",
-                  dayIndex === daysInMonth.length - 1 ? "" : "border-r"
+                  isToday(day) ? "bg-accent/20 text-accent-foreground" : "", // Highlight for today
+                  dayIndex === daysInMonth.length - 1 ? "" : "border-r" // No right border for last day
                 )}
               >
                 <div className="text-xs">{dayNames[getDay(day)].slice(0,3)}</div>
@@ -136,8 +142,9 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
               const chainInfo = habitChains.find(c => c.habitId === habit.id);
               return (
                 <React.Fragment key={habit.id}>
+                  {/* Habit Name Cell (Sticky) */}
                   <div
-                    className="sticky left-0 z-10 bg-transparent md:bg-card px-1 py-1 md:px-2 border-r flex items-center justify-between group min-h-[44px]"
+                    className="sticky left-0 z-10 bg-transparent md:bg-card px-1 py-1 md:px-2 border-r flex items-center justify-start group min-h-[44px]" // Changed justify-between to justify-start
                     style={{ borderBottomWidth: habitIndex === habits.length -1 ? '0px' : '1px' }}
                   >
                     <div className="flex items-center overflow-hidden whitespace-nowrap w-full justify-start">
@@ -155,6 +162,7 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
                       </Button>
                     </div>
                   </div>
+                  {/* Completion Cells */}
                   {daysInMonth.map((day, dayIndex) => {
                     const dateKey = format(day, 'yyyy-MM-dd');
                     const isCompleted = !!habit.completions[dateKey];
@@ -165,10 +173,10 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
                         key={dateKey}
                         className={cn(
                           "relative p-0 border-b flex items-center justify-center min-h-[44px]",
-                          dayIndex === daysInMonth.length - 1 ? "" : "border-r",
-                          isToday(day) && !isCompleted && !isFutureDay ? "bg-accent/20" : "",
-                          chainInfo?.isFullMonthChain && isCompleted && !isFutureDay ? "bg-chart-1/20" : "",
-                           isFutureDay ? "bg-muted/30" : ""
+                          dayIndex === daysInMonth.length - 1 ? "" : "border-r", // No right border for last cell
+                          isToday(day) && !isCompleted && !isFutureDay ? "bg-accent/20" : "", // Highlight for today if not completed
+                          chainInfo?.isFullMonthChain && isCompleted && !isFutureDay ? "bg-chart-1/20" : "", // Chain highlight
+                           isFutureDay ? "bg-muted/30" : "" // Dim future days
                         )}
                         style={{ borderBottomWidth: habitIndex === habits.length -1 ? '0px' : '1px' }}
                       >
@@ -176,13 +184,13 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
                           variant={isCompleted ? 'default' : 'ghost'}
                           size="icon"
                           className={cn(
-                              "h-6 w-6 rounded-full transition-all duration-150",
+                              "h-6 w-6 rounded-full transition-all duration-150", // Smaller button
                               isCompleted && !isFutureDay ? `opacity-100 scale-100 text-primary-foreground` : "opacity-60 hover:opacity-100 hover:bg-accent scale-90 hover:scale-100",
-                              isFutureDay ? "cursor-not-allowed opacity-30 hover:bg-transparent !important" : ""
+                              isFutureDay ? "cursor-not-allowed opacity-30 hover:bg-transparent !important" : "" // Disabled styles for future
                           )}
                           style={isCompleted && !isFutureDay ? { backgroundColor: habit.color } : {}}
                           onClick={(e) => {
-                             if (isFutureDay) {
+                             if (isFutureDay) { // Prevent action on future days
                                   e.preventDefault();
                                   e.stopPropagation();
                                   return;
@@ -195,6 +203,7 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
                         >
                           {isCompleted && !isFutureDay && <X className="h-3.5 w-3.5" />}
                         </Button>
+                        {/* Chain line visualization */}
                         {chainInfo?.isFullMonthChain && isCompleted && !isFutureDay && (
                           <div className="absolute top-1/2 left-0 w-full h-0.5 -translate-y-1/2 opacity-40" style={{backgroundColor: habit.color, zIndex: -1 }}/>
                         )}

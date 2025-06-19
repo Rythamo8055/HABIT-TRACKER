@@ -113,3 +113,17 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scroll-area-hide-scrollbar > [data-orientation="vertical"],
+  .scroll-area-hide-scrollbar > [data-orientation="horizontal"] {
+      display: none;
+  }
+}

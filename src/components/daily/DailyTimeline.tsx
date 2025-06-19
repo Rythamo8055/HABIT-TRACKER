@@ -51,10 +51,10 @@ export function DailyTimeline() {
 
   useEffect(() => {
     setCurrentDate(startOfDay(new Date()));
-    setCurrentTimeLine(new Date());
+    setCurrentTimeLine(new Date()); // Initialize currentTimeLine
     const timerId = setInterval(() => {
       setCurrentTimeLine(new Date());
-    }, 60000);
+    }, 60000); // Update every minute
     return () => clearInterval(timerId);
   }, []);
 
@@ -83,7 +83,7 @@ export function DailyTimeline() {
 
 
   const timeSlots = Array.from({ length: 24 }, (_, i) => {
-    const baseDateForSlot = currentDate || startOfDay(new Date());
+    const baseDateForSlot = currentDate || startOfDay(new Date()); // Use currentDate if available
     const hour = startOfDay(baseDateForSlot);
     hour.setHours(i);
     return hour;
@@ -148,12 +148,16 @@ export function DailyTimeline() {
     if (!currentTimeLine || !currentDate || !isSameDay(currentDate, currentTimeLine)) {
       return null;
     }
+    // Calculate minutes past midnight for the current time
     const minutesPastMidnight = currentTimeLine.getHours() * 60 + currentTimeLine.getMinutes();
+    // Each hour slot is 6rem high (24 slots * 0.25rem/minute if 1 hour = 6rem)
+    // So, top position in rem = (minutesPastMidnight / 60) * heightOfOneHourSlotInRem
+    // Assuming heightOfOneHourSlotInRem = 6rem (24px in tailwind for h-24 / 4 = 6rem)
     
     return (
       <div
         className="absolute left-16 right-0 ml-1 h-0.5 bg-red-500 z-10 flex items-center"
-        style={{ top: `${minutesPastMidnight / 60 * 6}rem` }}
+        style={{ top: `${minutesPastMidnight / 60 * 6}rem` }} // 6rem per hour
         aria-label="Current time"
       >
         <div className="absolute -left-2 h-2 w-2 rounded-full bg-red-500 -translate-x-full"></div>
@@ -211,7 +215,7 @@ export function DailyTimeline() {
             <DialogHeader>
               <DialogTitle className="font-headline">{editingEvent ? 'Edit Event' : 'Add New Event'}</DialogTitle>
             </DialogHeader>
-            {currentDate && (
+            {currentDate && ( // Ensure currentDate is not null before rendering EventForm
               <EventForm
                 onSubmit={handleFormSubmit}
                 onCancel={handleCloseForm}
@@ -228,14 +232,14 @@ export function DailyTimeline() {
             <p>Loading timeline...</p>
           </div>
         ) : (
-          <ScrollArea className="h-[calc(100vh-280px)] md:pr-4 relative">
+          <ScrollArea className={cn("h-[calc(100vh-280px)] md:pr-4 relative", "scroll-area-hide-scrollbar")}>
             <div className="relative px-4 md:px-0">
               {timeSlots.map((slot, index) => (
                 <div key={index} className="flex items-start h-24 border-b border-dashed">
                   <div className="w-16 pr-2 text-right text-xs text-muted-foreground pt-1 sticky top-0 bg-inherit md:bg-card">
                     {format(slot, 'ha')}
                   </div>
-                  <div className="flex-1 relative"></div>
+                  <div className="flex-1 relative"></div> {/* Placeholder for event rendering area */}
                 </div>
               ))}
 
@@ -247,9 +251,9 @@ export function DailyTimeline() {
                 const startMinutesPastMidnight = start.getHours() * 60 + start.getMinutes();
                 const endMinutesPastMidnight = end.getHours() * 60 + end.getMinutes();
 
-                const topOffsetRem = startMinutesPastMidnight / 60 * 6;
+                const topOffsetRem = startMinutesPastMidnight / 60 * 6; // 6rem per hour
                 const durationMinutes = endMinutesPastMidnight - startMinutesPastMidnight;
-                const heightRem = Math.max(durationMinutes / 60 * 6, 1.5);
+                const heightRem = Math.max(durationMinutes / 60 * 6, 1.5); // Min height 1.5rem (e.g. for a 15min event)
 
                 return (
                   <div
@@ -258,8 +262,8 @@ export function DailyTimeline() {
                     style={{
                       top: `${topOffsetRem}rem`,
                       height: `${heightRem}rem`,
-                      backgroundColor: 'hsl(var(--primary) / 0.1)',
-                      borderLeft: '4px solid hsl(var(--primary))',
+                      backgroundColor: 'hsl(var(--primary) / 0.1)', // Softer primary background
+                      borderLeft: '4px solid hsl(var(--primary))', // Primary color left border
                     }}
                     aria-label={`Event: ${event.title} from ${format(start, 'p')} to ${format(end, 'p')}`}
                   >

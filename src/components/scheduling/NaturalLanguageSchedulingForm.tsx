@@ -220,7 +220,7 @@ export function NaturalLanguageSchedulingForm({ onSuccessfulScheduling }: Natura
       {aiScheduledEvents && aiScheduledEvents.length > 0 && (
         <div className="p-6 border-t md:border-border">
           <h3 className="text-md font-semibold mb-2 font-headline">AI Generated Output:</h3>
-          <ScrollArea className="h-[200px] pr-3">
+          <ScrollArea className={cn("h-[200px] pr-3", "scroll-area-hide-scrollbar")}>
             <ul className="space-y-3">
               {aiScheduledEvents.map((event, index) => (
                 <li key={index} className="p-3 bg-muted/50 rounded-md text-sm">
