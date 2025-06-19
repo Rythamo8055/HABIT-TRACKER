@@ -9,28 +9,26 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { CalendarEvent, EventFormData } from '@/lib/types';
-import { format, parseISO, setHours, setMinutes, setSeconds, setMilliseconds, parse } from 'date-fns';
+import { format, parseISO, setHours, setMinutes, parse } from 'date-fns';
 
 interface EventFormProps {
   onSubmit: (data: EventFormData) => void;
   onCancel: () => void;
   initialData?: CalendarEvent;
-  currentDate: Date; // To ensure events are created for the correct day
+  currentDate: Date; 
 }
+
+// Schema expects HH:mm format for time strings
+const timeStringSchema = z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:mm format");
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title is too long"),
-  startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
+  startTime: timeStringSchema, // e.g., "09:00"
+  endTime: timeStringSchema,   // e.g., "10:30"
   description: z.string().max(500, "Description is too long").optional(),
 }).refine(data => {
-  try {
-    const start = parse(data.startTime, "yyyy-MM-dd'T'HH:mm", new Date());
-    const end = parse(data.endTime, "yyyy-MM-dd'T'HH:mm", new Date());
-    return end > start;
-  } catch {
-    return false;
-  }
+  // Compare time strings directly HH:mm vs HH:mm
+  return data.endTime > data.startTime;
 }, {
   message: "End time must be after start time",
   path: ["endTime"],
@@ -39,30 +37,30 @@ const formSchema = z.object({
 
 export function EventForm({ onSubmit, onCancel, initialData, currentDate }: EventFormProps) {
   
-  const defaultStartTime = setSeconds(setMilliseconds(addMinutes(setHours(currentDate, 9),0),0),0); // Default to 9:00 AM of current date
-  const defaultEndTime = setSeconds(setMilliseconds(addMinutes(setHours(currentDate, 10),0),0),0);   // Default to 10:00 AM of current date
+  const defaultStartTime = setMinutes(setHours(currentDate, 9),0); // Default to 9:00 AM of current date
+  const defaultEndTime = setMinutes(setHours(currentDate, 10),0);   // Default to 10:00 AM of current date
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: initialData?.title || '',
-      startTime: initialData ? format(parseISO(initialData.startTime), "yyyy-MM-dd'T'HH:mm") : format(defaultStartTime, "yyyy-MM-dd'T'HH:mm"),
-      endTime: initialData ? format(parseISO(initialData.endTime), "yyyy-MM-dd'T'HH:mm") : format(defaultEndTime, "yyyy-MM-dd'T'HH:mm"),
+      startTime: initialData ? format(parseISO(initialData.startTime), "HH:mm") : format(defaultStartTime, "HH:mm"),
+      endTime: initialData ? format(parseISO(initialData.endTime), "HH:mm") : format(defaultEndTime, "HH:mm"),
       description: initialData?.description || '',
     },
   });
 
-  const handleSubmit: SubmitHandler<z.infer<typeof formSchema>> = (data) => {
+  const handleSubmitInternal: SubmitHandler<z.infer<typeof formSchema>> = (data) => {
     const finalData: EventFormData = {
       ...data,
-      source: initialData?.source || 'user_planned', // Preserve source or default to user_planned
+      source: initialData?.source || 'user_planned', 
     };
     onSubmit(finalData);
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmitInternal)} className="space-y-4">
         <FormField
           control={form.control}
           name="title"
@@ -84,7 +82,8 @@ export function EventForm({ onSubmit, onCancel, initialData, currentDate }: Even
               <FormItem>
                 <FormLabel>Start Time</FormLabel>
                 <FormControl>
-                  <Input type="datetime-local" {...field} />
+                  {/* Input type "time" naturally provides HH:mm format */}
+                  <Input type="time" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -97,7 +96,7 @@ export function EventForm({ onSubmit, onCancel, initialData, currentDate }: Even
               <FormItem>
                 <FormLabel>End Time</FormLabel>
                 <FormControl>
-                  <Input type="datetime-local" {...field} />
+                  <Input type="time" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -124,8 +123,4 @@ export function EventForm({ onSubmit, onCancel, initialData, currentDate }: Even
       </form>
     </Form>
   );
-}
-
-function addMinutes(date: Date, minutes: number): Date {
-  return new Date(date.getTime() + minutes * 60000);
 }

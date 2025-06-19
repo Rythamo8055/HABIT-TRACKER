@@ -89,13 +89,11 @@ export function DailyTimeline() {
     setCurrentTime(new Date()); // Set initial time
     const timerId = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000);
+    }, 60000); // Update every minute
     return () => clearInterval(timerId);
   }, []);
 
   const timeSlots = Array.from({ length: 24 }, (_, i) => {
-    // This will use the correct currentDate once it's set, or a fallback if rendered before.
-    // However, the main component has a loading state based on currentDate.
     const baseDateForSlot = currentDate || startOfDay(new Date()); 
     const hour = startOfDay(baseDateForSlot);
     hour.setHours(i);
@@ -103,7 +101,7 @@ export function DailyTimeline() {
   });
 
   const handleOpenForm = (eventToEdit?: CalendarEvent) => {
-    if (!currentDate) return; // Should not happen if button is disabled
+    if (!currentDate) return;
     setEditingEvent(eventToEdit || null);
     setIsFormOpen(true);
   };
@@ -114,19 +112,37 @@ export function DailyTimeline() {
   };
 
   const handleFormSubmit = (data: EventFormData) => {
-    const startTimeISO = parse(data.startTime, "yyyy-MM-dd'T'HH:mm", new Date()).toISOString();
-    const endTimeISO = parse(data.endTime, "yyyy-MM-dd'T'HH:mm", new Date()).toISOString();
+    if (!currentDate) return; // Should not happen
+    // Ensure times are associated with the currentDate
+    const parsedStartTime = parse(data.startTime, "HH:mm", new Date());
+    const parsedEndTime = parse(data.endTime, "HH:mm", new Date());
+
+    const finalStartTime = new Date(currentDate);
+    finalStartTime.setHours(parsedStartTime.getHours(), parsedStartTime.getMinutes(), 0, 0);
+    
+    const finalEndTime = new Date(currentDate);
+    finalEndTime.setHours(parsedEndTime.getHours(), parsedEndTime.getMinutes(), 0, 0);
+
+    if (finalEndTime <= finalStartTime) {
+        alert("End time must be after start time."); // Or use a toast
+        return;
+    }
+    
+    const startTimeISO = finalStartTime.toISOString();
+    const endTimeISO = finalEndTime.toISOString();
 
     if (editingEvent) {
       setEvents(prevEvents =>
         prevEvents.map(ev =>
-          ev.id === editingEvent.id ? { ...ev, ...data, startTime: startTimeISO, endTime: endTimeISO } : ev
+          ev.id === editingEvent.id ? { ...ev, title: data.title, description: data.description, source: data.source, startTime: startTimeISO, endTime: endTimeISO } : ev
         ).sort((a, b) => parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime())
       );
     } else {
       const newEvent: CalendarEvent = {
         id: `event-${Date.now()}`,
-        ...data,
+        title: data.title,
+        description: data.description,
+        source: data.source,
         startTime: startTimeISO,
         endTime: endTimeISO,
       };
@@ -144,7 +160,9 @@ export function DailyTimeline() {
       return null;
     }
     const minutesPastMidnight = currentTime.getHours() * 60 + currentTime.getMinutes();
-    const topOffsetRem = (minutesPastMidnight / 60) * 6;
+    // Each hour slot is 6rem (24 * 0.25rem per 15min segment), so 1 minute is 6rem / 60min = 0.1rem
+    const topOffsetRem = minutesPastMidnight * 0.1;
+
 
     return (
       <div
@@ -156,7 +174,7 @@ export function DailyTimeline() {
       </div>
     );
   };
-
+  
   if (!currentDate) {
     return (
       <Card className="h-full flex flex-col">
@@ -167,7 +185,7 @@ export function DailyTimeline() {
             </CardTitle>
             <CardDescription>View and manage your day's schedule.</CardDescription>
           </div>
-          <Button disabled> {/* Disable button while loading date */}
+          <Button disabled>
             <PlusCircle className="mr-2 h-4 w-4" /> Add Event
           </Button>
         </CardHeader>
@@ -199,7 +217,7 @@ export function DailyTimeline() {
             <DialogHeader>
               <DialogTitle className="font-headline">{editingEvent ? 'Edit Event' : 'Add New Event'}</DialogTitle>
             </DialogHeader>
-            {currentDate && ( // Ensures EventForm only renders if currentDate is available
+            {currentDate && (
               <EventForm 
                 onSubmit={handleFormSubmit} 
                 onCancel={handleCloseForm} 
@@ -216,14 +234,14 @@ export function DailyTimeline() {
             <p>Loading timeline...</p>
           </div>
         ) : (
-          <ScrollArea className="h-[calc(100vh-280px)] pr-4 relative">
-            <div className="relative">
+          <ScrollArea className="h-[calc(100vh-280px)] pr-4 relative"> {/* Ensure pr-4 doesn't cause issues if scrollbar is overlayed */}
+            <div className="relative"> {/* Container for time slots and events */}
               {timeSlots.map((slot, index) => (
-                <div key={index} className="flex items-start h-24 border-b border-dashed">
+                <div key={index} className="flex items-start h-24 border-b border-dashed"> {/* 6rem = 96px, h-24 */}
                   <div className="w-16 pr-2 text-right text-xs text-muted-foreground pt-1 sticky top-0 bg-card">
                     {format(slot, 'ha')}
                   </div>
-                  <div className="flex-1 relative"></div>
+                  <div className="flex-1 relative"></div> {/* Event plotting area for this hour */}
                 </div>
               ))}
               
@@ -235,8 +253,10 @@ export function DailyTimeline() {
                 const startMinutesPastMidnight = start.getHours() * 60 + start.getMinutes();
                 const endMinutesPastMidnight = end.getHours() * 60 + end.getMinutes();
 
-                const topOffsetRem = (startMinutesPastMidnight / 60) * 6; 
-                const heightRem = Math.max(((endMinutesPastMidnight - startMinutesPastMidnight) / 60) * 6, 2);
+                // Each hour is 6rem. 1 minute = 0.1rem
+                const topOffsetRem = startMinutesPastMidnight * 0.1; 
+                const durationMinutes = endMinutesPastMidnight - startMinutesPastMidnight;
+                const heightRem = Math.max(durationMinutes * 0.1, 1.5); // Min height of 1.5rem for visibility
 
                 return (
                   <div
@@ -262,14 +282,14 @@ export function DailyTimeline() {
                             </div>
                         </div>
                         <div className="flex flex-col sm:flex-row items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenForm(event)}>
-                                <Edit3 className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenForm(event)}>
+                                <Edit3 className="h-5 w-5" />
                                 <span className="sr-only">Edit event</span>
                             </Button>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
-                                        <Trash2 className="h-4 w-4" />
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                        <Trash2 className="h-5 w-5" />
                                         <span className="sr-only">Delete event</span>
                                     </Button>
                                 </AlertDialogTrigger>

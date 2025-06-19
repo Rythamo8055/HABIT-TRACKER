@@ -56,8 +56,8 @@ export type HabitCategory = {
 // Data for creating/updating calendar events
 export interface EventFormData {
   title: string;
-  startTime: string; // Expected as YYYY-MM-DDTHH:mm
-  endTime: string;   // Expected as YYYY-MM-DDTHH:mm
+  startTime: string; // Expected as HH:mm (time string)
+  endTime: string;   // Expected as HH:mm (time string)
   description?: string;
   source: CalendarEvent['source'];
 }
