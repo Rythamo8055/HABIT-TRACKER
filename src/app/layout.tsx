@@ -29,11 +29,11 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Life Architect" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-config" content="/browserconfig.xml" /> 
+        <meta name="msapplication-config" content="/browserconfig.xml" />
         <meta name="msapplication-TileColor" content="#63FFDA" />
         <meta name="msapplication-tap-highlight" content="no" />
-        <meta name="theme-color" content="#F2F2F2" /> {/* For light theme */}
-        {/* <meta name="theme-color" content="#1E1E2E" media="(prefers-color-scheme: dark)" /> For dark theme if different */}
+        <meta name="theme-color" content="#F2F2F2" />
+        {/* <meta name="theme-color" content="#1E1E2E" media="(prefers-color-scheme: dark)" /> */}
         <link rel="apple-touch-icon" href={appIconUrl} data-ai-hint="rose art" />
         <link rel="icon" type="image/png" sizes="32x32" href={appIconUrl} data-ai-hint="rose art" />
         <link rel="icon" type="image/png" sizes="16x16" href={appIconUrl} data-ai-hint="rose art" />
@@ -57,4 +57,3 @@ export default function RootLayout({
     </html>
   );
 }
-
