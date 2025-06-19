@@ -5,7 +5,6 @@ import React, { useMemo, useEffect, useRef } from 'react';
 import type { Habit } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, isToday, isSameDay, isFuture, startOfDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, X, Edit3, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -26,7 +25,7 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
   const monthEnd = endOfMonth(currentMonth);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const cardContentRef = useRef<HTMLDivElement>(null);
   const todayHeaderCellRef = useRef<HTMLDivElement>(null);
 
   const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
@@ -59,24 +58,21 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
     });
   }, [habits, daysInMonth]);
 
-  useEffect(() => {
-    if (scrollAreaRef.current && todayHeaderCellRef.current) {
-        const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+ useEffect(() => {
+    if (cardContentRef.current && todayHeaderCellRef.current) {
+        const container = cardContentRef.current;
+        const todayCell = todayHeaderCellRef.current;
         
-        if (viewport && todayHeaderCellRef.current) {
-            const habitNameColumn = viewport.querySelector('div.sticky.left-0'); // Query within viewport
-            const habitNameColumnWidth = habitNameColumn ? (habitNameColumn as HTMLElement).offsetWidth : 0;
-            
-            const scrollLeftPosition = 
-                (todayHeaderCellRef.current as HTMLElement).offsetLeft - 
-                // habitNameColumnWidth is not needed if offsetLeft is relative to the scroll parent
-                (viewport.clientWidth / 2) + 
-                ((todayHeaderCellRef.current as HTMLElement).clientWidth / 2);
-
-            viewport.scrollLeft = Math.max(0, scrollLeftPosition);
-        }
+        const containerWidth = container.offsetWidth;
+        const todayCellOffsetLeft = todayCell.offsetLeft;
+        const todayCellWidth = todayCell.offsetWidth;
+        
+        // Calculate scroll position to center today's cell
+        const scrollLeftPosition = todayCellOffsetLeft - (containerWidth / 2) + (todayCellWidth / 2);
+        
+        container.scrollLeft = Math.max(0, scrollLeftPosition);
     }
-  }, [currentMonth, habits]); // Removed refs from dependencies as they are stable
+  }, [currentMonth, habits, daysInMonth]);
 
 
   if (habits.length === 0) {
@@ -114,8 +110,7 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="pt-0 px-0 md:px-6 md:pb-6 flex-grow overflow-hidden">
-        <ScrollArea type="auto" className="w-full h-full" ref={scrollAreaRef}>
+      <CardContent ref={cardContentRef} className="pt-0 px-0 md:px-6 md:pb-6 flex-grow overflow-x-auto overflow-y-hidden">
           <div className="grid gap-px min-w-max" style={{ gridTemplateColumns: `minmax(50px, auto) repeat(${daysInMonth.length}, minmax(38px, 1fr))` }}>
             {/* Header Row: Habit Name */}
             <div className="sticky left-0 z-10 bg-inherit md:bg-card px-1 py-1 md:px-2 border-b border-r flex items-center justify-center md:justify-start h-12">
@@ -146,7 +141,7 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
                     className="sticky left-0 z-10 bg-inherit md:bg-card px-1 py-1 md:px-2 border-r flex items-center justify-between group min-h-[44px]"
                     style={{ borderBottomWidth: habitIndex === habits.length -1 ? '0px' : '1px' }}
                   >
-                    <div className="flex items-center overflow-hidden whitespace-nowrap w-full justify-center md:justify-start">
+                    <div className="flex items-center overflow-hidden whitespace-nowrap w-full justify-center sm:justify-start">
                       <span className="w-3 h-3 rounded-full mr-0 sm:mr-1.5 shrink-0" style={{ backgroundColor: habit.color }} />
                       <span className="truncate text-sm hidden sm:inline" title={habit.name}>{habit.name}</span>
                     </div>
@@ -211,8 +206,8 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
               );
             })}
           </div>
-        </ScrollArea>
       </CardContent>
     </Card>
   );
 }
+
