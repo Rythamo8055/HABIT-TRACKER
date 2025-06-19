@@ -2,18 +2,22 @@
 import { GoalDecompositionForm } from '@/components/goals/GoalDecompositionForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Lightbulb } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function GoalsPage() {
   return (
-    <div className="container mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 md:container md:mx-auto">
+      <div className="flex items-center justify-between px-4 md:px-0">
         <h1 className="text-3xl font-headline font-bold">Goal Setting with AI</h1>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-6">
         <div className="md:col-span-2">
            <GoalDecompositionForm />
         </div>
-        <Card className="md:col-span-1 rounded-none border-transparent shadow-none bg-transparent text-foreground md:rounded-lg md:border md:border-border md:bg-card md:text-card-foreground md:shadow-sm">
+        <Card className={cn(
+            "md:col-span-1 rounded-none border-transparent shadow-none bg-transparent text-foreground",
+            "md:rounded-lg md:border md:border-border md:bg-card md:text-card-foreground md:shadow-sm"
+          )}>
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
               <Lightbulb className="h-6 w-6 text-primary" />

@@ -5,6 +5,7 @@ import React, { useMemo, useEffect, useRef } from 'react';
 import type { Habit } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, getDaysInMonth, isSameMonth, isToday, isSameDay, isFuture, startOfDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, X, Edit3, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -61,7 +62,7 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
   useEffect(() => {
     if (scrollContainerRef.current && todayHeaderCellRef.current) {
       const habitNameColumn = scrollContainerRef.current.querySelector<HTMLDivElement>('div[class*="sticky"]');
-      const habitNameColumnWidth = habitNameColumn ? habitNameColumn.offsetWidth : 120; 
+      const habitNameColumnWidth = habitNameColumn ? habitNameColumn.offsetWidth : 100; // Adjusted default based on new minmax
       
       const scrollLeftPosition = todayHeaderCellRef.current.offsetLeft - habitNameColumnWidth - 10; 
       scrollContainerRef.current.scrollLeft = Math.max(0, scrollLeftPosition);
@@ -84,14 +85,13 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
   }
 
   return (
-    <Card 
+     <Card 
       className={cn(
-        "overflow-x-auto rounded-none border-transparent shadow-none bg-transparent text-foreground",
+        "rounded-none border-transparent shadow-none bg-transparent text-foreground",
         "md:rounded-lg md:border md:border-border md:bg-card md:text-card-foreground md:shadow-sm"
       )}
-      ref={scrollContainerRef}
     >
-      <CardHeader className="flex flex-row items-center justify-between sticky left-0 bg-inherit z-20 md:bg-card">
+      <CardHeader className="flex flex-row items-center justify-between sticky left-0 bg-inherit md:bg-card z-20 px-4 md:px-6">
         <div>
             <CardTitle className="font-headline text-xl">Habit Tracker</CardTitle>
             <CardDescription>{format(currentMonth, 'MMMM yyyy')}</CardDescription>
@@ -105,98 +105,102 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="grid gap-px min-w-max" style={{ gridTemplateColumns: `minmax(100px, auto) repeat(${daysInMonth.length}, minmax(40px, auto))` }}>
-          {/* Header Row: Habit Name */}
-          <div className="sticky left-0 z-10 bg-inherit md:bg-card px-2 py-1 font-semibold border-b border-r flex items-center h-14">Habit</div>
-          {/* Header Row: Day Numbers */}
-          {daysInMonth.map((day, dayIndex) => (
-            <div 
-              key={day.toString()} 
-              ref={isToday(day) ? todayHeaderCellRef : null}
-              className={cn(
-                "p-1 text-center font-medium border-b flex flex-col items-center justify-center h-14", 
-                isToday(day) ? "bg-accent/20 text-accent-foreground font-bold" : "", // Changed highlight for today
-                dayIndex === daysInMonth.length - 1 ? "" : "border-r" 
-              )}
-            >
-              <div className="text-xs">{dayNames[getDay(day)].slice(0,3)}</div>
-              <div className="text-base font-semibold">{format(day, 'd')}</div>
-            </div>
-          ))}
+      <CardContent className="pt-0 px-0 md:px-6 md:pb-6">
+        <ScrollArea type="auto" className="w-full" ref={scrollContainerRef}>
+          <div className="grid gap-px min-w-max" style={{ gridTemplateColumns: `minmax(80px, 1fr) repeat(${daysInMonth.length}, minmax(36px, 1fr))` }}>
+            {/* Header Row: Habit Name */}
+            <div className="sticky left-0 z-10 bg-inherit md:bg-card px-1.5 py-1 font-semibold border-b border-r flex items-center h-12">Habit</div>
+            {/* Header Row: Day Numbers */}
+            {daysInMonth.map((day, dayIndex) => (
+              <div 
+                key={day.toString()} 
+                ref={isToday(day) ? todayHeaderCellRef : null}
+                className={cn(
+                  "p-1 text-center font-medium border-b flex flex-col items-center justify-center h-12", 
+                  isToday(day) ? "bg-accent/20 text-accent-foreground" : "",
+                  dayIndex === daysInMonth.length - 1 ? "" : "border-r" 
+                )}
+              >
+                <div className="text-xs">{dayNames[getDay(day)].slice(0,3)}</div>
+                <div className="text-sm font-semibold">{format(day, 'd')}</div>
+              </div>
+            ))}
 
-          {/* Habit Rows */}
-          {habits.map((habit, habitIndex) => {
-            const chainInfo = habitChains.find(c => c.habitId === habit.id);
-            return (
-              <React.Fragment key={habit.id}>
-                <div 
-                  className="sticky left-0 z-10 bg-inherit md:bg-card px-2 py-1 border-r flex items-center justify-between group min-h-[48px]"
-                  style={{ borderBottomWidth: habitIndex === habits.length -1 ? '0px' : '1px' }}
-                >
-                  <div className="flex items-center overflow-hidden text-ellipsis whitespace-nowrap">
-                    <span className="w-3 h-3 rounded-full mr-2 shrink-0" style={{ backgroundColor: habit.color }} />
-                    <span className="truncate text-sm" title={habit.name}>{habit.name}</span>
-                  </div>
-                  <div className="flex items-center shrink-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEditHabit(habit)}>
-                      <Edit3 className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => onDeleteHabit(habit)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-                {daysInMonth.map((day, dayIndex) => {
-                  const dateKey = format(day, 'yyyy-MM-dd');
-                  const isCompleted = !!habit.completions[dateKey];
-                  const isFutureDay = isFuture(startOfDay(day)) && !isSameDay(day, startOfDay(new Date()));
-                  
-                  return (
-                    <div 
-                      key={dateKey} 
-                      className={cn(
-                        "relative p-0 border-b flex items-center justify-center min-h-[48px]",
-                        dayIndex === daysInMonth.length - 1 ? "" : "border-r", 
-                        isToday(day) && !isCompleted && !isFutureDay ? "bg-accent/20" : "",
-                        chainInfo?.isFullMonthChain && isCompleted && !isFutureDay ? "bg-chart-1/20" : "", // Use themed green
-                        isFutureDay ? "bg-muted/30" : ""
-                      )}
-                      style={{ borderBottomWidth: habitIndex === habits.length -1 ? '0px' : '1px' }}
-                    >
-                      <Button
-                        variant={isCompleted ? 'default' : 'ghost'}
-                        size="icon"
-                        className={cn(
-                            "h-7 w-7 rounded-full transition-all duration-150", 
-                            isCompleted && !isFutureDay ? `opacity-100 scale-100 text-primary-foreground` : "opacity-60 hover:opacity-100 hover:bg-accent scale-90 hover:scale-100",
-                            isFutureDay ? "cursor-not-allowed opacity-30 hover:bg-transparent !important" : ""
-                        )}
-                        style={isCompleted && !isFutureDay ? { backgroundColor: habit.color } : {}}
-                        onClick={(e) => {
-                           if (isFutureDay) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                return;
-                           }
-                           onToggleHabitCompletion(habit.id, dateKey, !isCompleted)
-                        }}
-                        disabled={isFutureDay}
-                        aria-pressed={isCompleted && !isFutureDay}
-                        aria-label={`Mark habit ${habit.name} as ${isCompleted ? 'incomplete' : 'complete'} for ${format(day, 'MMMM do')}${isFutureDay ? ' (future date, disabled)' : ''}`}
-                      >
-                        {isCompleted && !isFutureDay && <X className="h-4 w-4" />}
-                      </Button>
-                      {chainInfo?.isFullMonthChain && isCompleted && !isFutureDay && (
-                        <div className="absolute top-1/2 left-0 w-full h-0.5 -translate-y-1/2 opacity-40" style={{backgroundColor: habit.color, zIndex: -1 }}/>
-                      )}
+            {/* Habit Rows */}
+            {habits.map((habit, habitIndex) => {
+              const chainInfo = habitChains.find(c => c.habitId === habit.id);
+              return (
+                <React.Fragment key={habit.id}>
+                  <div 
+                    className="sticky left-0 z-10 bg-inherit md:bg-card px-1.5 py-1 border-r flex items-center justify-between group min-h-[44px]"
+                    style={{ borderBottomWidth: habitIndex === habits.length -1 ? '0px' : '1px' }}
+                  >
+                    <div className="flex items-center overflow-hidden text-ellipsis whitespace-nowrap">
+                      <span className="w-2.5 h-2.5 rounded-full mr-1.5 shrink-0" style={{ backgroundColor: habit.color }} />
+                      <span className="truncate text-sm" title={habit.name}>{habit.name}</span>
                     </div>
-                  );
-                })}
-              </React.Fragment>
-            );
-          })}
-        </div>
+                    <div className="flex items-center shrink-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => onEditHabit(habit)}>
+                        <Edit3 className="h-3 w-3" />
+                         <span className="sr-only">Edit habit</span>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive" onClick={() => onDeleteHabit(habit)}>
+                        <Trash2 className="h-3 w-3" />
+                         <span className="sr-only">Delete habit</span>
+                      </Button>
+                    </div>
+                  </div>
+                  {daysInMonth.map((day, dayIndex) => {
+                    const dateKey = format(day, 'yyyy-MM-dd');
+                    const isCompleted = !!habit.completions[dateKey];
+                    const isFutureDay = isFuture(startOfDay(day)) && !isSameDay(day, startOfDay(new Date()));
+                    
+                    return (
+                      <div 
+                        key={dateKey} 
+                        className={cn(
+                          "relative p-0 border-b flex items-center justify-center min-h-[44px]",
+                          dayIndex === daysInMonth.length - 1 ? "" : "border-r", 
+                          isToday(day) && !isCompleted && !isFutureDay ? "bg-accent/20" : "",
+                          chainInfo?.isFullMonthChain && isCompleted && !isFutureDay ? "bg-chart-1/20" : "", 
+                          isFutureDay ? "bg-muted/30" : ""
+                        )}
+                        style={{ borderBottomWidth: habitIndex === habits.length -1 ? '0px' : '1px' }}
+                      >
+                        <Button
+                          variant={isCompleted ? 'default' : 'ghost'}
+                          size="icon"
+                          className={cn(
+                              "h-6 w-6 rounded-full transition-all duration-150", 
+                              isCompleted && !isFutureDay ? `opacity-100 scale-100 text-primary-foreground` : "opacity-60 hover:opacity-100 hover:bg-accent scale-90 hover:scale-100",
+                              isFutureDay ? "cursor-not-allowed opacity-30 hover:bg-transparent !important" : ""
+                          )}
+                          style={isCompleted && !isFutureDay ? { backgroundColor: habit.color } : {}}
+                          onClick={(e) => {
+                             if (isFutureDay) {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  return;
+                             }
+                             onToggleHabitCompletion(habit.id, dateKey, !isCompleted)
+                          }}
+                          disabled={isFutureDay}
+                          aria-pressed={isCompleted && !isFutureDay}
+                          aria-label={`Mark habit ${habit.name} as ${isCompleted ? 'incomplete' : 'complete'} for ${format(day, 'MMMM do')}${isFutureDay ? ' (future date, disabled)' : ''}`}
+                        >
+                          {isCompleted && !isFutureDay && <X className="h-3.5 w-3.5" />}
+                        </Button>
+                        {chainInfo?.isFullMonthChain && isCompleted && !isFutureDay && (
+                          <div className="absolute top-1/2 left-0 w-full h-0.5 -translate-y-1/2 opacity-40" style={{backgroundColor: habit.color, zIndex: -1 }}/>
+                        )}
+                      </div>
+                    );
+                  })}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
