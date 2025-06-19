@@ -58,29 +58,35 @@ const EventIcon = ({ source }: { source: CalendarEvent['source'] }) => {
 };
 
 export function DailyTimeline() {
-  const [currentDate, setCurrentDate] = useState(startOfDay(new Date())); // Ensure it's start of day
+  const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
   useEffect(() => {
-    setIsLoading(true);
-    fetchEventsFromStorage(currentDate).then(fetchedEvents => {
-      setEvents(fetchedEvents.sort((a, b) => parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime()));
-      setIsLoading(false);
-    });
+    setCurrentDate(startOfDay(new Date()));
+  }, []);
+
+  useEffect(() => {
+    if (currentDate) {
+      setIsLoadingEvents(true);
+      fetchEventsFromStorage(currentDate).then(fetchedEvents => {
+        setEvents(fetchedEvents.sort((a, b) => parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime()));
+        setIsLoadingEvents(false);
+      });
+    }
   }, [currentDate]);
 
   useEffect(() => {
-    if (!isLoading) {
+    if (currentDate && !isLoadingEvents) {
       saveEventsToStorage(currentDate, events);
     }
-  }, [events, currentDate, isLoading]);
+  }, [events, currentDate, isLoadingEvents]);
 
   useEffect(() => {
-    setCurrentTime(new Date());
+    setCurrentTime(new Date()); // Set initial time
     const timerId = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000);
@@ -88,12 +94,16 @@ export function DailyTimeline() {
   }, []);
 
   const timeSlots = Array.from({ length: 24 }, (_, i) => {
-    const hour = startOfDay(currentDate); // Use the state's currentDate
+    // This will use the correct currentDate once it's set, or a fallback if rendered before.
+    // However, the main component has a loading state based on currentDate.
+    const baseDateForSlot = currentDate || startOfDay(new Date()); 
+    const hour = startOfDay(baseDateForSlot);
     hour.setHours(i);
     return hour;
   });
 
   const handleOpenForm = (eventToEdit?: CalendarEvent) => {
+    if (!currentDate) return; // Should not happen if button is disabled
     setEditingEvent(eventToEdit || null);
     setIsFormOpen(true);
   };
@@ -104,17 +114,16 @@ export function DailyTimeline() {
   };
 
   const handleFormSubmit = (data: EventFormData) => {
-    // Convert 'datetime-local' string back to ISO string
     const startTimeISO = parse(data.startTime, "yyyy-MM-dd'T'HH:mm", new Date()).toISOString();
     const endTimeISO = parse(data.endTime, "yyyy-MM-dd'T'HH:mm", new Date()).toISOString();
 
-    if (editingEvent) { // Update existing event
+    if (editingEvent) {
       setEvents(prevEvents =>
         prevEvents.map(ev =>
           ev.id === editingEvent.id ? { ...ev, ...data, startTime: startTimeISO, endTime: endTimeISO } : ev
         ).sort((a, b) => parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime())
       );
-    } else { // Add new event
+    } else {
       const newEvent: CalendarEvent = {
         id: `event-${Date.now()}`,
         ...data,
@@ -131,7 +140,7 @@ export function DailyTimeline() {
   };
 
   const renderCurrentTimeIndicator = () => {
-    if (!currentTime || !isSameDay(currentDate, currentTime)) {
+    if (!currentTime || !currentDate || !isSameDay(currentDate, currentTime)) {
       return null;
     }
     const minutesPastMidnight = currentTime.getHours() * 60 + currentTime.getMinutes();
@@ -148,6 +157,29 @@ export function DailyTimeline() {
     );
   };
 
+  if (!currentDate) {
+    return (
+      <Card className="h-full flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="font-headline text-xl">
+              Daily Timeline - Loading date...
+            </CardTitle>
+            <CardDescription>View and manage your day's schedule.</CardDescription>
+          </div>
+          <Button disabled> {/* Disable button while loading date */}
+            <PlusCircle className="mr-2 h-4 w-4" /> Add Event
+          </Button>
+        </CardHeader>
+        <CardContent className="flex-grow overflow-hidden">
+          <div className="flex items-center justify-center h-full">
+            <p>Initializing timeline...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -159,7 +191,7 @@ export function DailyTimeline() {
         </div>
         <Dialog open={isFormOpen} onOpenChange={(open) => { if (!open) handleCloseForm(); else setIsFormOpen(true); }}>
           <DialogTrigger asChild>
-            <Button onClick={() => handleOpenForm()}>
+            <Button onClick={() => handleOpenForm()} disabled={!currentDate}>
               <PlusCircle className="mr-2 h-4 w-4" /> Add Event
             </Button>
           </DialogTrigger>
@@ -167,22 +199,24 @@ export function DailyTimeline() {
             <DialogHeader>
               <DialogTitle className="font-headline">{editingEvent ? 'Edit Event' : 'Add New Event'}</DialogTitle>
             </DialogHeader>
-            <EventForm 
-              onSubmit={handleFormSubmit} 
-              onCancel={handleCloseForm} 
-              initialData={editingEvent || undefined}
-              currentDate={currentDate}
-            />
+            {currentDate && ( // Ensures EventForm only renders if currentDate is available
+              <EventForm 
+                onSubmit={handleFormSubmit} 
+                onCancel={handleCloseForm} 
+                initialData={editingEvent || undefined}
+                currentDate={currentDate}
+              />
+            )}
           </DialogContent>
         </Dialog>
       </CardHeader>
       <CardContent className="flex-grow overflow-hidden">
-        {isLoading ? (
+        {isLoadingEvents ? (
           <div className="flex items-center justify-center h-full">
             <p>Loading timeline...</p>
           </div>
         ) : (
-          <ScrollArea className="h-[calc(100vh-280px)] pr-4 relative"> {/* Adjusted height */}
+          <ScrollArea className="h-[calc(100vh-280px)] pr-4 relative">
             <div className="relative">
               {timeSlots.map((slot, index) => (
                 <div key={index} className="flex items-start h-24 border-b border-dashed">
@@ -202,7 +236,7 @@ export function DailyTimeline() {
                 const endMinutesPastMidnight = end.getHours() * 60 + end.getMinutes();
 
                 const topOffsetRem = (startMinutesPastMidnight / 60) * 6; 
-                const heightRem = Math.max(((endMinutesPastMidnight - startMinutesPastMidnight) / 60) * 6, 2); // Min height 2rem
+                const heightRem = Math.max(((endMinutesPastMidnight - startMinutesPastMidnight) / 60) * 6, 2);
 
                 return (
                   <div
