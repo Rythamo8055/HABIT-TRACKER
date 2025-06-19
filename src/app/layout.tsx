@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
+import Image from 'next/image';
 
 export const metadata: Metadata = {
   title: 'Life Architect',
   description: 'Architect your best life with AI-powered planning and tracking.',
-  manifest: '/manifest.json', // Added manifest
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -30,13 +31,24 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#63FFDA" />
         <meta name="msapplication-tap-highlight" content="no" />
         <meta name="theme-color" content="#F2F2F2" />
-        {/* Placeholder icons for PWA, actual icons should be added to public/icons */}
-        <link rel="apple-touch-icon" href="https://placehold.co/180x180.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="https://placehold.co/32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="https://placehold.co/16x16.png" />
+        <link rel="apple-touch-icon" href="https://placehold.co/180x180.png" data-ai-hint="logo appicon" />
+        <link rel="icon" type="image/png" sizes="32x32" href="https://placehold.co/32x32.png" data-ai-hint="logo appicon" />
+        <link rel="icon" type="image/png" sizes="16x16" href="https://placehold.co/16x16.png" data-ai-hint="logo appicon" />
       </head>
       <body className="font-body antialiased min-h-screen flex flex-col">
-        {children}
+        <Image
+          src="https://raw.githubusercontent.com/linuxdotexe/nordic-wallpapers/master/wallpapers/ign_astronaut.png"
+          alt="Futuristic astronaut overlooking a vibrant cityscape from a high-tech balcony at night."
+          layout="fill"
+          objectFit="cover"
+          quality={75}
+          className="-z-10 opacity-30 dark:opacity-20"
+          priority
+          data-ai-hint="astronaut space"
+        />
+        <div className="relative z-0 flex flex-col flex-1">
+          {children}
+        </div>
         <Toaster />
       </body>
     </html>
