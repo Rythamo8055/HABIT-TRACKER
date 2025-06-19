@@ -6,16 +6,15 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { CalendarEvent, EventFormData } from '@/lib/types';
 import { EventForm } from './EventForm';
 import { format, startOfDay, addHours, isSameDay, parseISO, parse } from 'date-fns';
 import { CheckCircle, Clock, Zap, Calendar as CalendarIcon, PlusCircle, Edit3, Trash2 } from 'lucide-react';
-import { fetchEventsForDate, saveEventsForDate } from '@/lib/timeline-event-storage'; // Updated import
+import { fetchEventsForDate, saveEventsForDate } from '@/lib/timeline-event-storage'; 
+import { cn } from '@/lib/utils';
 
-// Mock function to simulate fetching events from localStorage
-// Replaced by fetchEventsForDate, but keeping sample data logic for initialization
 const getInitialSampleEvents = (date: Date): CalendarEvent[] => {
   const today = startOfDay(new Date());
    if (isSameDay(date, today)) {
@@ -66,7 +65,7 @@ export function DailyTimeline() {
         if (fetchedEvents.length === 0 && isSameDay(currentDate, startOfDay(new Date())) && !localStorage.getItem(`timeline_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`)) {
           const sampleEvents = getInitialSampleEvents(currentDate);
           setEvents(sampleEvents);
-          saveEventsForDate(currentDate, sampleEvents); // Save samples
+          saveEventsForDate(currentDate, sampleEvents); 
           localStorage.setItem(`timeline_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`, 'true');
         } else {
           setEvents(fetchedEvents);
@@ -132,7 +131,7 @@ export function DailyTimeline() {
         id: `event-${Date.now()}`,
         title: data.title,
         description: data.description,
-        source: data.source, // This will be 'user_planned' from form
+        source: data.source, 
         startTime: startTimeISO,
         endTime: endTimeISO,
       };
@@ -150,13 +149,13 @@ export function DailyTimeline() {
       return null;
     }
     const minutesPastMidnight = currentTime.getHours() * 60 + currentTime.getMinutes();
-    const topOffsetRem = minutesPastMidnight * 0.1;
+    const topOffsetRem = minutesPastMidnight * (24 * 4 / (24 * 60)); // 24rem total height / 24h * 60min
 
 
     return (
       <div
         className="absolute left-16 right-0 ml-1 h-0.5 bg-red-500 z-10 flex items-center"
-        style={{ top: `${topOffsetRem}rem` }}
+        style={{ top: `${minutesPastMidnight / 60 * 6}rem` }} // Each hour slot is 6rem high
         aria-label="Current time"
       >
         <div className="absolute -left-2 h-2 w-2 rounded-full bg-red-500 -translate-x-full"></div>
@@ -166,8 +165,12 @@ export function DailyTimeline() {
   
   if (!currentDate) {
     return (
-      <Card className="h-full flex flex-col">
-        <CardHeader className="flex flex-row items-center justify-between">
+      <Card className={cn(
+        "h-full flex flex-col",
+        "rounded-none border-transparent shadow-none bg-transparent text-foreground",
+        "md:rounded-lg md:border md:border-border md:bg-card md:text-card-foreground md:shadow-sm"
+      )}>
+        <CardHeader className="flex flex-row items-center justify-between px-4 md:px-6">
           <div>
             <CardTitle className="font-headline text-xl">
               Daily Timeline - Loading date...
@@ -178,7 +181,7 @@ export function DailyTimeline() {
             <PlusCircle className="mr-2 h-4 w-4" /> Add Event
           </Button>
         </CardHeader>
-        <CardContent className="flex-grow overflow-hidden">
+        <CardContent className="flex-grow overflow-hidden px-4 md:px-6">
           <div className="flex items-center justify-center h-full">
             <p>Initializing timeline...</p>
           </div>
@@ -188,8 +191,12 @@ export function DailyTimeline() {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className={cn(
+      "h-full flex flex-col",
+      "rounded-none border-transparent shadow-none bg-transparent text-foreground",
+      "md:rounded-lg md:border md:border-border md:bg-card md:text-card-foreground md:shadow-sm"
+    )}>
+      <CardHeader className="flex flex-row items-center justify-between px-4 md:px-6">
         <div>
           <CardTitle className="font-headline text-xl">
             Daily Timeline - {format(currentDate, 'EEEE, MMMM do')}
@@ -217,17 +224,17 @@ export function DailyTimeline() {
           </DialogContent>
         </Dialog>
       </CardHeader>
-      <CardContent className="flex-grow overflow-hidden">
+      <CardContent className="flex-grow overflow-hidden px-0 md:px-6 pb-6">
         {isLoadingEvents ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-full px-4 md:px-0">
             <p>Loading timeline...</p>
           </div>
         ) : (
-          <ScrollArea className="h-[calc(100vh-280px)] pr-4 relative">
-            <div className="relative"> 
+          <ScrollArea className="h-[calc(100vh-280px)] md:pr-4 relative">
+            <div className="relative px-4 md:px-0"> 
               {timeSlots.map((slot, index) => (
                 <div key={index} className="flex items-start h-24 border-b border-dashed">
-                  <div className="w-16 pr-2 text-right text-xs text-muted-foreground pt-1 sticky top-0 bg-card">
+                  <div className="w-16 pr-2 text-right text-xs text-muted-foreground pt-1 sticky top-0 bg-inherit md:bg-card">
                     {format(slot, 'ha')}
                   </div>
                   <div className="flex-1 relative"></div> 
@@ -242,9 +249,9 @@ export function DailyTimeline() {
                 const startMinutesPastMidnight = start.getHours() * 60 + start.getMinutes();
                 const endMinutesPastMidnight = end.getHours() * 60 + end.getMinutes();
 
-                const topOffsetRem = startMinutesPastMidnight * 0.1; 
+                const topOffsetRem = startMinutesPastMidnight / 60 * 6; 
                 const durationMinutes = endMinutesPastMidnight - startMinutesPastMidnight;
-                const heightRem = Math.max(durationMinutes * 0.1, 1.5); 
+                const heightRem = Math.max(durationMinutes / 60 * 6, 1.5); 
 
                 return (
                   <div
@@ -309,3 +316,4 @@ export function DailyTimeline() {
     </Card>
   );
 }
+

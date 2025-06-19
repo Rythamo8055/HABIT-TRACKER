@@ -8,8 +8,11 @@ import type { Habit } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'; // Removed AlertDialogTrigger as it's not directly used here for delete
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 // Mock functions for fetching and saving habits (replace with actual storage)
 const fetchHabits = async (): Promise<Habit[]> => {
@@ -113,12 +116,12 @@ export default function HabitsPage() {
   };
 
   if (isLoading) {
-    return <div className="container mx-auto p-4 md:p-6 lg:p-8">Loading habits...</div>;
+    return <div className="space-y-6 md:px-0">Loading habits...</div>;
   }
 
   return (
-    <div className="container mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6 md:px-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-4 md:px-0">
         <h1 className="text-3xl font-headline font-bold">Habit Tracker</h1>
         <Dialog open={isAddFormOpen} onOpenChange={setIsAddFormOpen}>
           <DialogTrigger asChild>
@@ -144,6 +147,28 @@ export default function HabitsPage() {
         onEditHabit={handleOpenEditForm}
         onDeleteHabit={handleOpenDeleteDialog}
       />
+
+      <Card className={cn(
+        "mt-6 rounded-none border-transparent shadow-none bg-transparent text-foreground",
+        "md:rounded-lg md:border md:border-border md:bg-card md:text-card-foreground md:shadow-sm"
+      )}>
+        <CardContent className="p-2 md:p-4 flex justify-center">
+           <Calendar
+            mode="single"
+            month={currentMonth}
+            onMonthChange={setCurrentMonth}
+            className="p-0"
+            classNames={{
+                caption_label: "text-lg font-headline",
+                head_cell: "w-10 md:w-12",
+                day: "h-10 w-10 md:h-12 md:w-12",
+                day_selected: "rounded-md",
+                day_today: "rounded-md",
+            }}
+          />
+        </CardContent>
+      </Card>
+
 
       {editingHabit && (
         <Dialog open={isEditFormOpen} onOpenChange={(open) => {

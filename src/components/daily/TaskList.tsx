@@ -14,6 +14,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 import { format, addDays, startOfDay, parseISO } from 'date-fns';
 import { fetchTasksForDate, saveTasksForDate, addTaskToDate as addTaskToStorageDate } from '@/lib/task-storage';
+import { cn } from '@/lib/utils';
 
 interface SortableTaskItemProps {
   task: Task;
@@ -201,11 +202,15 @@ export function TaskList() {
 
   if (!currentDate) {
     return (
-      <Card className="h-full flex flex-col">
-        <CardHeader>
+      <Card className={cn(
+        "h-full flex flex-col",
+        "rounded-none border-transparent shadow-none bg-transparent text-foreground",
+        "md:rounded-lg md:border md:border-border md:bg-card md:text-card-foreground md:shadow-sm"
+      )}>
+        <CardHeader className="px-4 md:px-6">
           <CardTitle className="font-headline text-xl">Loading tasks...</CardTitle>
         </CardHeader>
-        <CardContent className="flex-grow flex items-center justify-center">
+        <CardContent className="flex-grow flex items-center justify-center px-4 md:px-6">
           <p>Initializing...</p>
         </CardContent>
       </Card>
@@ -213,14 +218,18 @@ export function TaskList() {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className={cn(
+      "h-full flex flex-col",
+      "rounded-none border-transparent shadow-none bg-transparent text-foreground",
+      "md:rounded-lg md:border md:border-border md:bg-card md:text-card-foreground md:shadow-sm"
+    )}>
+      <CardHeader className="flex flex-row items-center justify-between px-4 md:px-6">
         <CardTitle className="font-headline text-xl">Tasks for {format(currentDate, 'MMM do')}</CardTitle>
         <Button variant="outline" size="sm" onClick={handleMigrateTasks} disabled={!tasks.some(t => !t.isCompleted)}>
           <ChevronsRight className="mr-2 h-4 w-4" /> Migrate Incomplete
         </Button>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col gap-4 overflow-hidden">
+      <CardContent className="flex-grow flex flex-col gap-4 overflow-hidden px-4 md:px-6 pb-6">
         <div className="flex gap-2">
           <Input
             type="text"
@@ -276,3 +285,4 @@ export function TaskList() {
     </Card>
   );
 }
+
