@@ -13,7 +13,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format, addDays, startOfDay, parseISO } from 'date-fns';
-import { fetchTasksForDate, saveTasksForDate, addTaskToDate as addTaskToStorageDate } from '@/lib/task-storage'; // Updated import
+import { fetchTasksForDate, saveTasksForDate, addTaskToDate as addTaskToStorageDate } from '@/lib/task-storage';
 
 interface SortableTaskItemProps {
   task: Task;
@@ -73,7 +73,7 @@ function SortableTaskItem({ task, onToggleComplete, onDeleteTask, onEditTask }: 
           id={`task-label-${task.id}`}
           htmlFor={`task-${task.id}`}
           className={`flex-grow cursor-pointer ${task.isCompleted ? 'line-through text-muted-foreground' : ''}`}
-          onClick={() => !task.isCompleted && setIsEditing(true)} // Allow editing by clicking label
+          onClick={() => !task.isCompleted && setIsEditing(true)}
         >
           {task.text}
         </label>
@@ -93,30 +93,35 @@ export function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskText, setNewTaskText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [currentDate, setCurrentDate] = useState(startOfDay(new Date())); // Store as Date object
+  const [currentDate, setCurrentDate] = useState<Date | null>(null); 
   const [activeDragItem, setActiveDragItem] = useState<Active | null>(null);
 
   useEffect(() => {
-    setIsLoading(true);
-    fetchTasksForDate(currentDate).then(fetchedTasks => {
-      // Sample tasks only if it's today and no stored tasks, and only if it's the first load for today
-      if (format(currentDate, 'yyyy-MM-dd') === format(startOfDay(new Date()), 'yyyy-MM-dd') && fetchedTasks.length === 0 && !localStorage.getItem(`tasks_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`)) {
-        const sampleTasks: Task[] = [
-          { id: 'task-1', text: 'Review PR #123', isCompleted: false, dueDate: format(currentDate, 'yyyy-MM-dd'), createdAt: Date.now() - 100000 },
-          { id: 'task-2', text: 'Draft project proposal', isCompleted: false, dueDate: format(currentDate, 'yyyy-MM-dd'), createdAt: Date.now() - 50000 },
-          { id: 'task-3', text: 'Follow up with Jane Doe', isCompleted: true, dueDate: format(currentDate, 'yyyy-MM-dd'), createdAt: Date.now() - 200000 },
-        ];
-        setTasks(sampleTasks.sort((a,b) => a.createdAt - b.createdAt));
-        localStorage.setItem(`tasks_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`, 'true');
-      } else {
-        setTasks(fetchedTasks);
-      }
-      setIsLoading(false);
-    });
+    setCurrentDate(startOfDay(new Date()));
+  }, []);
+
+  useEffect(() => {
+    if (currentDate) {
+      setIsLoading(true);
+      fetchTasksForDate(currentDate).then(fetchedTasks => {
+        if (format(currentDate, 'yyyy-MM-dd') === format(startOfDay(new Date()), 'yyyy-MM-dd') && fetchedTasks.length === 0 && !localStorage.getItem(`tasks_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`)) {
+          const sampleTasks: Task[] = [
+            { id: 'task-1', text: 'Review PR #123', isCompleted: false, dueDate: format(currentDate, 'yyyy-MM-dd'), createdAt: Date.now() - 100000 },
+            { id: 'task-2', text: 'Draft project proposal', isCompleted: false, dueDate: format(currentDate, 'yyyy-MM-dd'), createdAt: Date.now() - 50000 },
+            { id: 'task-3', text: 'Follow up with Jane Doe', isCompleted: true, dueDate: format(currentDate, 'yyyy-MM-dd'), createdAt: Date.now() - 200000 },
+          ];
+          setTasks(sampleTasks.sort((a,b) => a.createdAt - b.createdAt));
+          localStorage.setItem(`tasks_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`, 'true');
+        } else {
+          setTasks(fetchedTasks);
+        }
+        setIsLoading(false);
+      });
+    }
   }, [currentDate]);
 
   useEffect(() => {
-    if (!isLoading) {
+    if (currentDate && !isLoading) {
       saveTasksForDate(currentDate, tasks);
     }
   }, [tasks, currentDate, isLoading]);
@@ -129,7 +134,7 @@ export function TaskList() {
   );
 
   const handleAddTask = async () => {
-    if (newTaskText.trim() === '') return;
+    if (newTaskText.trim() === '' || !currentDate) return;
     const addedTask = await addTaskToStorageDate(currentDate, { text: newTaskText.trim(), isCompleted: false });
     setTasks(prevTasks => [...prevTasks, addedTask].sort((a,b) => a.createdAt - b.createdAt));
     setNewTaskText('');
@@ -156,6 +161,7 @@ export function TaskList() {
   };
 
   const handleMigrateTasks = async () => {
+    if (!currentDate) return;
     const incompleteTasks = tasks.filter(task => !task.isCompleted);
     if (incompleteTasks.length === 0) {
       alert("No incomplete tasks to migrate.");
@@ -165,7 +171,7 @@ export function TaskList() {
     const nextDay = addDays(currentDate, 1);
     
     const completedTasks = tasks.filter(task => task.isCompleted);
-    setTasks(completedTasks); // Keep completed tasks for the current day
+    setTasks(completedTasks); 
 
     const nextDayExistingTasks = await fetchTasksForDate(nextDay);
     const migratedTasks = incompleteTasks.map(task => ({ ...task, dueDate: format(nextDay, 'yyyy-MM-dd'), createdAt: Date.now() }));
@@ -185,13 +191,26 @@ export function TaskList() {
       setTasks((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
-        if (oldIndex === -1 || newIndex === -1) return items; // Should not happen
+        if (oldIndex === -1 || newIndex === -1) return items;
         return arrayMove(items, oldIndex, newIndex);
       });
     }
   }
   
   const activeTask = activeDragItem ? tasks.find(task => task.id === activeDragItem.id) : null;
+
+  if (!currentDate) {
+    return (
+      <Card className="h-full flex flex-col">
+        <CardHeader>
+          <CardTitle className="font-headline text-xl">Loading tasks...</CardTitle>
+        </CardHeader>
+        <CardContent className="flex-grow flex items-center justify-center">
+          <p>Initializing...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-full flex flex-col">
