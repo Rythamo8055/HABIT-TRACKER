@@ -1,11 +1,8 @@
+
 {
   "name": "Life Architect",
   "short_name": "LifeArch",
   "description": "Architect your best life with AI-powered planning and tracking.",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#F2F2F2",
-  "theme_color": "#63FFDA",
   "icons": [
     {
       "src": "https://placehold.co/192x192.png",
@@ -19,5 +16,10 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "theme_color": "#1e1e2e",
+  "background_color": "#1e1e2e",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/"
 }

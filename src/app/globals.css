@@ -4,97 +4,99 @@
 
 @layer base {
   :root {
-    --background: 0 0% 95%; /* Light Gray #F2F2F2 */
-    --foreground: 0 0% 10%; /* Darker gray for text */
+    /* Light Theme (Derived/Inspired by Catppuccin) */
+    --background: 10 56% 91%; /* Rosewater */
+    --foreground: 237 16% 23%; /* Surface0 (as dark text) */
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card: 0 59% 88%; /* Flamingo */
+    --card-foreground: 237 16% 23%; /* Surface0 */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover: 10 56% 95%; /* Lighter Rosewater */
+    --popover-foreground: 237 16% 23%; /* Surface0 */
 
-    --primary: 165 100% 70%; /* Soft Teal #63FFDA */
-    --primary-foreground: 165 100% 20%; /* Dark Teal for text on primary */
+    --primary: 170 57% 73%; /* Teal */
+    --primary-foreground: 240 21% 15%; /* Base (dark text on Teal) */
 
-    --secondary: 0 0% 90%; /* Slightly darker than background */
-    --secondary-foreground: 0 0% 10%;
+    --secondary: 316 72% 86%; /* Pink */
+    --secondary-foreground: 237 16% 23%; /* Surface0 */
 
-    --muted: 0 0% 85%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 232 60% 92%; /* Lighter Lavender */
+    --muted-foreground: 230 13% 55%; /* Overlay1 */
 
-    --accent: 260 47% 73%; /* Muted Lavender #B39DDB */
-    --accent-foreground: 260 47% 25%; /* Dark Lavender for text on accent */
+    --accent: 267 84% 81%; /* Mauve */
+    --accent-foreground: 240 21% 15%; /* Base (dark text on Mauve) */
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 343 81% 75%; /* Red */
+    --destructive-foreground: 240 21% 15%; /* Base */
 
-    --border: 0 0% 80%;
-    --input: 0 0% 88%; /* Lighter input for better contrast on light gray */
-    --ring: 165 100% 70%; /* Primary color for rings */
+    --border: 227 35% 80%; /* Subtext1 */
+    --input: 228 24% 94%; /* Lighter Subtext0 */
+    --ring: 170 57% 73%; /* Teal */
 
     --radius: 0.5rem;
 
-    /* Sidebar specific colors for light theme */
-    --sidebar-background: 0 0% 98%; /* Slightly off-white for sidebar */
-    --sidebar-foreground: 0 0% 20%;
-    --sidebar-primary: 165 100% 70%;
-    --sidebar-primary-foreground: 165 100% 20%;
-    --sidebar-accent: 0 0% 92%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 0 0% 85%;
-    --sidebar-ring: 165 100% 70%;
+    /* Sidebar/BottomNav specific colors for light theme */
+    --sidebar-background: 10 56% 91%;
+    --sidebar-foreground: 237 16% 23%;
+    --sidebar-primary: 170 57% 73%;
+    --sidebar-primary-foreground: 240 21% 15%;
+    --sidebar-accent: 316 72% 86%;
+    --sidebar-accent-foreground: 237 16% 23%;
+    --sidebar-border: 227 35% 80%;
+    --sidebar-ring: 170 57% 73%;
 
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --chart-1: 115 45% 60%; /* Green (slightly darker for light bg) */
+    --chart-2: 41 70% 70%;  /* Yellow (slightly darker) */
+    --chart-3: 23 80% 65%;  /* Peach (slightly darker) */
+    --chart-4: 350 55% 60%; /* Maroon (slightly darker) */
+    --chart-5: 343 70% 60%; /* Red (slightly darker) */
   }
 
   .dark {
-    --background: 240 6% 10%; /* Very dark blue/gray */
-    --foreground: 0 0% 95%; /* Light gray text */
+    /* Dark Theme (Catppuccin Mocha) */
+    --background: 240 21% 15%; /* Base */
+    --foreground: 226 64% 88%; /* Text */
 
-    --card: 240 6% 12%;
-    --card-foreground: 0 0% 95%;
+    --card: 240 21% 12%; /* Mantle */
+    --card-foreground: 226 64% 88%; /* Text */
 
-    --popover: 240 6% 12%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 240 21% 12%; /* Mantle */
+    --popover-foreground: 226 64% 88%; /* Text */
 
-    --primary: 165 100% 70%; /* Keep vibrant teal on dark */
-    --primary-foreground: 165 100% 20%;
+    --primary: 170 57% 73%; /* Teal */
+    --primary-foreground: 240 21% 15%; /* Base (for text on primary) */
 
-    --secondary: 240 5% 15%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 237 16% 23%; /* Surface0 */
+    --secondary-foreground: 226 64% 88%; /* Text */
 
-    --muted: 240 5% 20%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 234 13% 31%; /* Surface1 */
+    --muted-foreground: 228 24% 72%; /* Subtext0 */
 
-    --accent: 260 55% 80%; /* Slightly lighter/more vibrant lavender */
-    --accent-foreground: 260 55% 25%;
+    --accent: 267 84% 81%; /* Mauve */
+    --accent-foreground: 240 21% 15%; /* Base (for text on accent) */
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 343 81% 75%; /* Red */
+    --destructive-foreground: 240 21% 15%; /* Base (for text on destructive) */
 
-    --border: 240 5% 25%;
-    --input: 240 5% 22%; /* Adjusted for dark mode */
-    --ring: 165 100% 70%;
+    --border: 233 12% 39%; /* Surface2 */
+    --input: 237 16% 23%; /* Surface0 */
+    --ring: 170 57% 73%; /* Teal */
 
-    /* Sidebar specific colors for dark theme */
-    --sidebar-background: 240 6% 12%; /* Darker sidebar */
-    --sidebar-foreground: 0 0% 85%;
-    --sidebar-primary: 165 100% 70%;
-    --sidebar-primary-foreground: 165 100% 20%;
-    --sidebar-accent: 240 5% 18%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 240 5% 20%;
-    --sidebar-ring: 165 100% 70%;
+    /* Sidebar/BottomNav specific colors for dark theme */
+    --sidebar-background: 240 23% 9%; /* Crust */
+    --sidebar-foreground: 226 64% 88%;
+    --sidebar-primary: 170 57% 73%;
+    --sidebar-primary-foreground: 240 21% 15%;
+    --sidebar-accent: 234 13% 31%;
+    --sidebar-accent-foreground: 226 64% 88%;
+    --sidebar-border: 237 16% 23%;
+    --sidebar-ring: 170 57% 73%;
     
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-1: 115 54% 76%; /* Green */
+    --chart-2: 41 86% 83%;  /* Yellow */
+    --chart-3: 23 92% 75%;  /* Peach */
+    --chart-4: 350 65% 77%; /* Maroon */
+    --chart-5: 316 72% 86%; /* Pink (using Catppuccin Pink) */
   }
 }
 

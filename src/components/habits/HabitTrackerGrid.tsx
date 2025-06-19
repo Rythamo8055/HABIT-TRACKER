@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { useMemo } from 'react'; // Added React import
+import React, { useMemo, useEffect, useRef } from 'react';
 import type { Habit } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -21,45 +22,50 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-  // const firstDayOfMonth = getDay(monthStart); // 0 for Sunday, 1 for Monday, etc. Not used currently
+  
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const todayHeaderCellRef = useRef<HTMLDivElement>(null); // Ref for the "today" header cell
 
   const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
   const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   
-  // "Don't Break the Chain" visualization
   const habitChains = useMemo(() => {
     return habits.map(habit => {
       const daysInCurrentDisplayMonth = getDaysInMonth(currentMonth);
       let consecutiveDays = 0;
-      // Check chain only for days up to today within the current month
+      let allPastOrTodayDaysInMonthCompleted = true;
+      
       for (const day of daysInMonth) {
-        if (isFuture(day, startOfDay(new Date())) && !isSameDay(day, startOfDay(new Date()))) break; // Stop counting if day is in future (and not today)
+        const dayIsFuture = isFuture(day, startOfDay(new Date())) && !isSameDay(day, startOfDay(new Date()));
+        if (dayIsFuture) continue; 
+
         if (habit.completions[format(day, 'yyyy-MM-dd')]) {
           consecutiveDays++;
         } else {
-          // If a day is missed, reset chain for "full month" check, unless we are looking at future days
-          if (!isFuture(day, startOfDay(new Date()))) {
-             // For full month chain, any break means not a full month chain.
-          }
+          allPastOrTodayDaysInMonthCompleted = false;
         }
       }
-      // A more accurate fullMonthChain would check if all *past and today* days in the month are complete
-      let allPastOrTodayDaysInMonthCompleted = true;
-      for (const day of daysInMonth) {
-        if (isFuture(day, startOfDay(new Date())) && !isSameDay(day, startOfDay(new Date())) ) continue; // Skip future days
-         if (!habit.completions[format(day, 'yyyy-MM-dd')]) {
-            allPastOrTodayDaysInMonthCompleted = false;
-            break;
-         }
-      }
-
+      
+      // A full month chain means all past or today days in the displayed month are completed.
+      const relevantDaysCount = daysInMonth.filter(d => !isFuture(d, startOfDay(new Date())) || isSameDay(d, startOfDay(new Date()))).length;
+      const isFullMonthChainCheck = allPastOrTodayDaysInMonthCompleted && (relevantDaysCount > 0 ? consecutiveDays >= relevantDaysCount : false) ;
 
       return {
         habitId: habit.id,
-        isFullMonthChain: allPastOrTodayDaysInMonthCompleted && consecutiveDays >= daysInCurrentDisplayMonth - daysInMonth.filter(d => isFuture(d, startOfDay(new Date())) && !isSameDay(d, startOfDay(new Date()))).length,
+        isFullMonthChain: isFullMonthChainCheck,
       };
     });
   }, [habits, daysInMonth, currentMonth]);
+
+  useEffect(() => {
+    if (scrollContainerRef.current && todayHeaderCellRef.current) {
+      const habitNameColumn = scrollContainerRef.current.querySelector<HTMLDivElement>('div[class*="sticky"]');
+      const habitNameColumnWidth = habitNameColumn ? habitNameColumn.offsetWidth : 150; // Default or measured
+      
+      const scrollLeftPosition = todayHeaderCellRef.current.offsetLeft - habitNameColumnWidth - 20; // 20px buffer
+      scrollContainerRef.current.scrollLeft = Math.max(0, scrollLeftPosition);
+    }
+  }, [currentMonth, habits]); // Scroll when month or habits change (e.g. habits load)
 
 
   if (habits.length === 0) {
@@ -74,8 +80,8 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
   }
 
   return (
-    <Card className="overflow-x-auto">
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="overflow-x-auto" ref={scrollContainerRef}>
+      <CardHeader className="flex flex-row items-center justify-between sticky left-0 bg-card z-20">
         <div>
             <CardTitle className="font-headline text-xl">Habit Tracker</CardTitle>
             <CardDescription>{format(currentMonth, 'MMMM yyyy')}</CardDescription>
@@ -90,14 +96,22 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="grid gap-px" style={{ gridTemplateColumns: `minmax(150px, 1fr) repeat(${daysInMonth.length}, minmax(40px, 1fr))` }}>
+        <div className="grid gap-px min-w-max" style={{ gridTemplateColumns: `minmax(150px, auto) repeat(${daysInMonth.length}, minmax(48px, auto))` }}>
           {/* Header Row: Habit Name */}
-          <div className="sticky left-0 z-10 bg-card p-2 font-semibold border-b border-r">Habit</div>
+          <div className="sticky left-0 z-10 bg-card p-2 font-semibold border-b border-r flex items-center">Habit</div>
           {/* Header Row: Day Numbers */}
-          {daysInMonth.map(day => (
-            <div key={day.toString()} className={cn("p-2 text-center font-medium border-b", isToday(day) ? "bg-primary/10 text-primary font-bold" : "")}>
-              <div>{dayNames[getDay(day)].slice(0,1)}</div>
-              <div>{format(day, 'd')}</div>
+          {daysInMonth.map((day, dayIndex) => (
+            <div 
+              key={day.toString()} 
+              ref={isToday(day) ? todayHeaderCellRef : null}
+              className={cn(
+                "p-2 text-center font-medium border-b flex flex-col items-center justify-center h-16", 
+                isToday(day) ? "bg-primary/10 text-primary font-bold" : "",
+                dayIndex === daysInMonth.length - 1 ? "" : "border-r" 
+              )}
+            >
+              <div className="text-xs">{dayNames[getDay(day)].slice(0,3)}</div>
+              <div className="text-lg font-bold">{format(day, 'd')}</div>
             </div>
           ))}
 
@@ -107,7 +121,7 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
             return (
               <React.Fragment key={habit.id}>
                 <div 
-                  className="sticky left-0 z-10 bg-card p-2 border-r flex items-center whitespace-nowrap overflow-hidden text-ellipsis"
+                  className="sticky left-0 z-10 bg-card p-2 border-r flex items-center whitespace-nowrap overflow-hidden text-ellipsis min-h-[56px]"
                   style={{ borderBottomWidth: habitIndex === habits.length -1 ? '0px' : '1px' }}
                 >
                   <span className="w-3 h-3 rounded-full mr-2 shrink-0" style={{ backgroundColor: habit.color }} />
@@ -122,10 +136,10 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
                     <div 
                       key={dateKey} 
                       className={cn(
-                        "relative p-0 border-b flex items-center justify-center",
+                        "relative p-0 border-b flex items-center justify-center min-h-[56px]",
                         dayIndex === daysInMonth.length - 1 ? "" : "border-r", 
                         isToday(day) && !isCompleted && !isFutureDay ? "bg-accent/20" : "",
-                        chainInfo?.isFullMonthChain && isCompleted && !isFutureDay ? "bg-green-500/30" : "",
+                        chainInfo?.isFullMonthChain && isCompleted && !isFutureDay ? "bg-green-500/20" : "", // Adjusted opacity
                         isFutureDay ? "bg-muted/30" : ""
                       )}
                       style={{ borderBottomWidth: habitIndex === habits.length -1 ? '0px' : '1px' }}
@@ -134,20 +148,27 @@ export function HabitTrackerGrid({ habits, onToggleHabitCompletion, currentMonth
                         variant={isCompleted ? 'default' : 'ghost'}
                         size="icon"
                         className={cn(
-                            "h-8 w-8 rounded-full transition-all duration-150",
-                            isCompleted && !isFutureDay ? `opacity-100 scale-100 bg-[${habit.color}] hover:bg-[${habit.color}]/90 text-primary-foreground` : "opacity-50 hover:opacity-100 hover:bg-accent scale-90 hover:scale-100",
-                            isFutureDay ? "cursor-not-allowed opacity-30 hover:bg-transparent" : ""
+                            "h-9 w-9 rounded-full transition-all duration-150", // Increased size slightly
+                            isCompleted && !isFutureDay ? `opacity-100 scale-100 text-primary-foreground` : "opacity-60 hover:opacity-100 hover:bg-accent scale-90 hover:scale-100",
+                            isFutureDay ? "cursor-not-allowed opacity-30 hover:bg-transparent !important" : "" // Ensure future day style overrides
                         )}
                         style={isCompleted && !isFutureDay ? { backgroundColor: habit.color } : {}}
-                        onClick={() => !isFutureDay && onToggleHabitCompletion(habit.id, dateKey, !isCompleted)}
+                        onClick={(e) => {
+                           if (isFutureDay) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return;
+                           }
+                           onToggleHabitCompletion(habit.id, dateKey, !isCompleted)
+                        }}
                         disabled={isFutureDay}
                         aria-pressed={isCompleted && !isFutureDay}
                         aria-label={`Mark habit ${habit.name} as ${isCompleted ? 'incomplete' : 'complete'} for ${format(day, 'MMMM do')}${isFutureDay ? ' (future date, disabled)' : ''}`}
                       >
-                        {isCompleted && !isFutureDay && <X className="h-4 w-4" />}
+                        {isCompleted && !isFutureDay && <X className="h-5 w-5" />} {/* Slightly larger icon */}
                       </Button>
                       {chainInfo?.isFullMonthChain && isCompleted && !isFutureDay && (
-                        <div className="absolute top-1/2 left-0 w-full h-1 -translate-y-1/2 opacity-50" style={{backgroundColor: habit.color, zIndex: -1 }}/>
+                        <div className="absolute top-1/2 left-0 w-full h-0.5 -translate-y-1/2 opacity-40" style={{backgroundColor: habit.color, zIndex: -1 }}/>
                       )}
                     </div>
                   );
