@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
@@ -35,7 +36,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="https://placehold.co/32x32.png" data-ai-hint="logo appicon" />
         <link rel="icon" type="image/png" sizes="16x16" href="https://placehold.co/16x16.png" data-ai-hint="logo appicon" />
       </head>
-      <body className="font-body antialiased min-h-screen flex flex-col">
+      <body className="font-body antialiased min-h-screen flex flex-col no-scrollbar">
         <Image
           src="https://raw.githubusercontent.com/linuxdotexe/nordic-wallpapers/master/wallpapers/ign_astronaut.png"
           alt="Futuristic astronaut overlooking a vibrant cityscape from a high-tech balcony at night."
