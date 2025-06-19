@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -8,10 +9,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusCircle, Trash2, ChevronsRight, Edit3, GripVertical } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay, Active } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay, type Active } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { format, addDays, startOfDay } from 'date-fns';
+import { format, addDays, startOfDay, parseISO } from 'date-fns'; // Ensured parseISO is imported
 
 // Mock function to simulate fetching tasks
 const fetchTasks = async (date: string): Promise<Task[]> => {
@@ -54,15 +55,17 @@ function SortableTaskItem({ task, onToggleComplete, onDeleteTask, onEditTask }: 
   };
 
   const handleEdit = () => {
-    if (isEditing && editText.trim() !== task.text) {
+    if (isEditing && editText.trim() !== task.text && editText.trim() !== '') {
       onEditTask(task.id, editText.trim());
+    } else if (isEditing && editText.trim() === '') {
+      setEditText(task.text); // Reset if submitted empty
     }
     setIsEditing(!isEditing);
   };
 
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-2 p-2 bg-card hover:bg-accent/50 rounded-md group">
-      <Button variant="ghost" size="icon" {...attributes} {...listeners} className="cursor-grab p-1 h-auto">
+      <Button variant="ghost" size="icon" {...attributes} {...listeners} className="cursor-grab p-1 h-auto touch-none">
         <GripVertical className="h-4 w-4 text-muted-foreground" />
       </Button>
       <Checkbox
@@ -76,7 +79,13 @@ function SortableTaskItem({ task, onToggleComplete, onDeleteTask, onEditTask }: 
           value={editText} 
           onChange={(e) => setEditText(e.target.value)} 
           onBlur={handleEdit}
-          onKeyDown={(e) => e.key === 'Enter' && handleEdit()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleEdit();
+            if (e.key === 'Escape') {
+              setEditText(task.text);
+              setIsEditing(false);
+            }
+          }}
           className="h-8 flex-grow"
           autoFocus
         />
@@ -164,17 +173,19 @@ export function TaskList() {
 
   const handleMigrateTasks = () => {
     const incompleteTasks = tasks.filter(task => !task.isCompleted);
-    const nextDayKey = format(addDays(parseISO(currentDateKey), 1), 'yyyy-MM-dd');
+    if (incompleteTasks.length === 0) {
+      alert("No incomplete tasks to migrate.");
+      return;
+    }
+    const currentParsedDate = parseISO(currentDateKey); // Make sure parseISO is in scope
+    const nextDayKey = format(addDays(currentParsedDate, 1), 'yyyy-MM-dd');
     
-    // This is a simplified migration. A real app might involve more complex logic or a backend.
-    // For now, we'll assume tasks are "moved" by clearing them from current day and adding to next day's storage.
     const completedTasks = tasks.filter(task => task.isCompleted);
-    setTasks(completedTasks); // Keep completed tasks for the current day
+    setTasks(completedTasks); 
 
-    // "Move" incomplete tasks to next day's local storage
     fetchTasks(nextDayKey).then(nextDayTasks => {
-      const migratedTasks = incompleteTasks.map(task => ({ ...task, dueDate: nextDayKey }));
-      saveTasks(nextDayKey, [...nextDayTasks, ...migratedTasks]);
+      const migratedTasks = incompleteTasks.map(task => ({ ...task, dueDate: nextDayKey, createdAt: Date.now() })); // Update createdAt for new sort order
+      saveTasks(nextDayKey, [...nextDayTasks, ...migratedTasks].sort((a,b) => a.createdAt - b.createdAt));
       alert(`${incompleteTasks.length} task(s) migrated to ${format(parseISO(nextDayKey), 'MMM do')}.`);
     });
   };
@@ -245,7 +256,9 @@ export function TaskList() {
              <DragOverlay>
               {activeTask ? (
                  <div className="flex items-center gap-2 p-2 bg-accent shadow-lg rounded-md">
-                   <GripVertical className="h-4 w-4 text-muted-foreground" />
+                   <Button variant="ghost" size="icon" className="cursor-grabbing p-1 h-auto">
+                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+                   </Button>
                    <Checkbox checked={activeTask.isCompleted} readOnly />
                    <label className={`flex-grow ${activeTask.isCompleted ? 'line-through text-muted-foreground' : ''}`}>
                      {activeTask.text}

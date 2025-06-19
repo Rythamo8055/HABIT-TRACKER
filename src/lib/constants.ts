@@ -1,5 +1,6 @@
+
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, CheckSquare, Target, Brain, CalendarDays, Settings } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Target, CalendarDays, BookOpenText } from 'lucide-react';
 
 export type NavItem = {
   href: string;
@@ -13,7 +14,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/habits', label: 'Habit Tracker', icon: CheckSquare },
   { href: '/goals', label: 'Goal Setting', icon: Target },
   { href: '/schedule', label: 'AI Scheduler', icon: CalendarDays },
-  // { href: '/journal', label: 'Journal & Logs', icon: BookOpenText }, // Future
+  { href: '/logs', label: 'Logs', icon: BookOpenText },
   // { href: '/settings', label: 'Settings', icon: Settings }, // Future
 ];
 

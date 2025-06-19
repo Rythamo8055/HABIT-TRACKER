@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,12 +13,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Habit, HabitCategory } from '@/lib/types';
-import { HABIT_CATEGORIES_EXAMPLES } from '@/lib/constants'; // Using examples as predefined categories for now
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { HABIT_CATEGORIES_EXAMPLES } from '@/lib/constants';
+import { Card, CardContent } from '../ui/card'; // Removed unused Header/Description
 
 interface HabitFormProps {
   onSubmit: (habit: Omit<Habit, 'id' | 'completions' | 'createdAt'>) => void;
-  existingHabit?: Habit; // For editing
+  onCancel: () => void; // Added for closing dialog
+  existingHabit?: Habit;
 }
 
 const predefinedCategories: HabitCategory[] = HABIT_CATEGORIES_EXAMPLES.map((cat, index) => ({
@@ -26,34 +28,38 @@ const predefinedCategories: HabitCategory[] = HABIT_CATEGORIES_EXAMPLES.map((cat
   color: cat.color,
 }));
 
-export function HabitForm({ onSubmit, existingHabit }: HabitFormProps) {
-  const [name, setName] = useState(existingHabit?.name || '');
-  const [category, setCategory] = useState(existingHabit?.category || predefinedCategories[0]?.name || '');
-  // Color is derived from category for simplicity in this version
-  // const [customColor, setCustomColor] = useState(existingHabit?.color || HABIT_CATEGORIES_EXAMPLES[0]?.color || '#CCCCCC');
+export function HabitForm({ onSubmit, onCancel, existingHabit }: HabitFormProps) {
+  const [name, setName] = useState('');
+  const [categoryName, setCategoryName] = useState('');
+
+  useEffect(() => {
+    if (existingHabit) {
+      setName(existingHabit.name);
+      setCategoryName(existingHabit.category);
+    } else {
+      // Set default for new habit
+      setName('');
+      setCategoryName(predefinedCategories[0]?.name || '');
+    }
+  }, [existingHabit]);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !category) return;
+    if (!name || !categoryName) return;
     
-    const selectedCategory = predefinedCategories.find(c => c.name === category);
-    const color = selectedCategory?.color || HABIT_CATEGORIES_EXAMPLES[0].color;
+    const selectedCategoryObject = predefinedCategories.find(c => c.name === categoryName);
+    const color = selectedCategoryObject?.color || HABIT_CATEGORIES_EXAMPLES[0].color;
 
-    onSubmit({ name, category, color });
-    if (!existingHabit) { // Reset form if adding new
-        setName('');
-        setCategory(predefinedCategories[0]?.name || '');
-    }
+    onSubmit({ name, category: categoryName, color });
+    // Resetting form for add is handled by parent closing dialog and remounting or parent state.
+    // For edit, parent will close dialog.
   };
 
   return (
-    <Card>
-        <CardHeader>
-            <CardTitle className="font-headline text-lg">{existingHabit ? 'Edit Habit' : 'Add New Habit'}</CardTitle>
-            <CardDescription>{existingHabit ? 'Update the details of your habit.' : 'Define a new habit to track.'}</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+    <Card className="border-0 shadow-none">
+        <CardContent className="p-0">
+            <form onSubmit={handleSubmit} className="space-y-6 pt-4">
             <div>
                 <Label htmlFor="habit-name">Habit Name</Label>
                 <Input
@@ -63,12 +69,13 @@ export function HabitForm({ onSubmit, existingHabit }: HabitFormProps) {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Drink 2L of water"
                 required
+                className="mt-1"
                 />
             </div>
             <div>
                 <Label htmlFor="habit-category">Category</Label>
-                <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger id="habit-category">
+                <Select value={categoryName} onValueChange={setCategoryName}>
+                    <SelectTrigger id="habit-category" className="mt-1">
                         <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -83,13 +90,12 @@ export function HabitForm({ onSubmit, existingHabit }: HabitFormProps) {
                     </SelectContent>
                 </Select>
             </div>
-            {/* <div>
-                <Label htmlFor="habit-color">Color (debugging, derived from category)</Label>
-                <Input id="habit-color" type="color" value={predefinedCategories.find(c => c.name === category)?.color || '#CCCCCC'} disabled/>
-            </div> */}
-            <Button type="submit" className="w-full">
-                {existingHabit ? 'Save Changes' : 'Add Habit'}
-            </Button>
+            <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+                <Button type="submit">
+                    {existingHabit ? 'Save Changes' : 'Add Habit'}
+                </Button>
+            </div>
             </form>
         </CardContent>
     </Card>

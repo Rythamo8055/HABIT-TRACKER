@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -5,8 +6,10 @@ import { HabitForm } from '@/components/habits/HabitForm';
 import { HabitTrackerGrid } from '@/components/habits/HabitTrackerGrid';
 import type { Habit } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, LayoutGrid, List } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { PlusCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock functions for fetching and saving habits (replace with actual storage)
 const fetchHabits = async (): Promise<Habit[]> => {
@@ -14,10 +17,9 @@ const fetchHabits = async (): Promise<Habit[]> => {
   const storedHabits = localStorage.getItem('habits');
   if (storedHabits) {
     const parsedHabits = JSON.parse(storedHabits) as Habit[];
-    // Ensure completions is an object
     return parsedHabits.map(h => ({ ...h, completions: h.completions || {} }));
   }
-  return [ // Default habits if none stored
+  return [ 
     { id: 'habit-1', name: 'Morning Run', category: 'Exercise', color: 'hsl(var(--chart-1))', completions: {}, createdAt: Date.now() - 200000},
     { id: 'habit-2', name: 'Read 30 mins', category: 'Learning', color: 'hsl(var(--chart-5))', completions: {}, createdAt: Date.now() - 100000},
     { id: 'habit-3', name: 'Meditate 10 mins', category: 'Mindfulness', color: 'hsl(var(--chart-3))', completions: {}, createdAt: Date.now()},
@@ -32,8 +34,12 @@ const saveHabits = async (habits: Habit[]) => {
 export default function HabitsPage() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isAddFormOpen, setIsAddFormOpen] = useState(false);
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsLoading(true);
@@ -56,8 +62,37 @@ export default function HabitsPage() {
       completions: {},
       createdAt: Date.now(),
     };
-    setHabits(prevHabits => [...prevHabits, newHabit]);
-    setIsFormOpen(false); // Close dialog after adding
+    setHabits(prevHabits => [...prevHabits, newHabit].sort((a,b) => a.createdAt - b.createdAt));
+    setIsAddFormOpen(false);
+    toast({ title: "Habit Added", description: `"${newHabit.name}" has been added.` });
+  };
+
+  const handleOpenEditForm = (habit: Habit) => {
+    setEditingHabit(habit);
+    setIsEditFormOpen(true);
+  };
+
+  const handleUpdateHabit = (updatedData: Omit<Habit, 'id' | 'completions' | 'createdAt'>) => {
+    if (!editingHabit) return;
+    setHabits(prevHabits =>
+      prevHabits.map(h =>
+        h.id === editingHabit.id ? { ...h, ...updatedData, color: updatedData.color || h.color } : h
+      ).sort((a,b) => a.createdAt - b.createdAt)
+    );
+    setIsEditFormOpen(false);
+    setEditingHabit(null);
+    toast({ title: "Habit Updated", description: `"${updatedData.name}" has been updated.` });
+  };
+  
+  const handleOpenDeleteDialog = (habit: Habit) => {
+    setHabitToDelete(habit);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!habitToDelete) return;
+    setHabits(prevHabits => prevHabits.filter(h => h.id !== habitToDelete.id));
+    toast({ title: "Habit Deleted", description: `"${habitToDelete.name}" has been deleted.`, variant: "destructive" });
+    setHabitToDelete(null);
   };
 
   const handleToggleHabitCompletion = (habitId: string, date: string, completed: boolean) => {
@@ -85,7 +120,7 @@ export default function HabitsPage() {
     <div className="container mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-headline font-bold">Habit Tracker</h1>
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <Dialog open={isAddFormOpen} onOpenChange={setIsAddFormOpen}>
           <DialogTrigger asChild>
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" /> Add New Habit
@@ -94,8 +129,9 @@ export default function HabitsPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="font-headline">Add New Habit</DialogTitle>
+              <DialogDescription>Define a new habit to track.</DialogDescription>
             </DialogHeader>
-            <HabitForm onSubmit={handleAddHabit} />
+            <HabitForm onSubmit={handleAddHabit} onCancel={() => setIsAddFormOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
@@ -105,7 +141,50 @@ export default function HabitsPage() {
         onToggleHabitCompletion={handleToggleHabitCompletion}
         currentMonth={currentMonth}
         setCurrentMonth={setCurrentMonth}
+        onEditHabit={handleOpenEditForm}
+        onDeleteHabit={handleOpenDeleteDialog}
       />
+
+      {editingHabit && (
+        <Dialog open={isEditFormOpen} onOpenChange={(open) => {
+          if (!open) {
+            setEditingHabit(null);
+          }
+          setIsEditFormOpen(open);
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="font-headline">Edit Habit</DialogTitle>
+              <DialogDescription>Update the details of your habit.</DialogDescription>
+            </DialogHeader>
+            <HabitForm 
+              onSubmit={handleUpdateHabit} 
+              existingHabit={editingHabit} 
+              onCancel={() => { setIsEditFormOpen(false); setEditingHabit(null); }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {habitToDelete && (
+        <AlertDialog open={!!habitToDelete} onOpenChange={(open) => !open && setHabitToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the habit
+                "{habitToDelete.name}".
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setHabitToDelete(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }
