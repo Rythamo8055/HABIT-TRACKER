@@ -15,6 +15,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const appIconUrl = "https://raw.githubusercontent.com/linuxdotexe/nordic-wallpapers/master/wallpapers/ign_nordic_rose.png";
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -31,10 +32,11 @@ export default function RootLayout({
         <meta name="msapplication-config" content="/browserconfig.xml" /> 
         <meta name="msapplication-TileColor" content="#63FFDA" />
         <meta name="msapplication-tap-highlight" content="no" />
-        <meta name="theme-color" content="#F2F2F2" />
-        <link rel="apple-touch-icon" href="https://placehold.co/180x180.png" data-ai-hint="logo appicon" />
-        <link rel="icon" type="image/png" sizes="32x32" href="https://placehold.co/32x32.png" data-ai-hint="logo appicon" />
-        <link rel="icon" type="image/png" sizes="16x16" href="https://placehold.co/16x16.png" data-ai-hint="logo appicon" />
+        <meta name="theme-color" content="#F2F2F2" /> {/* For light theme */}
+        {/* <meta name="theme-color" content="#1E1E2E" media="(prefers-color-scheme: dark)" /> For dark theme if different */}
+        <link rel="apple-touch-icon" href={appIconUrl} data-ai-hint="rose art" />
+        <link rel="icon" type="image/png" sizes="32x32" href={appIconUrl} data-ai-hint="rose art" />
+        <link rel="icon" type="image/png" sizes="16x16" href={appIconUrl} data-ai-hint="rose art" />
       </head>
       <body className="font-body antialiased min-h-screen flex flex-col no-scrollbar">
         <Image
@@ -55,3 +57,4 @@ export default function RootLayout({
     </html>
   );
 }
+
