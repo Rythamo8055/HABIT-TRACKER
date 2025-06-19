@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -24,19 +25,19 @@ export function SidebarNav() {
     <SidebarMenu>
       {NAV_ITEMS.map((item) => (
         <SidebarMenuItem key={item.href}>
-          <Link href={item.href} legacyBehavior passHref>
-            <SidebarMenuButton
-              asChild={false} // Explicitly false for Link compatibility with legacyBehavior
-              isActive={isActive(item)}
-              tooltip={{ children: item.label, className: "capitalize" }}
-              className="justify-start"
-            >
+          <SidebarMenuButton
+            asChild={true}
+            isActive={isActive(item)}
+            tooltip={{ children: item.label, className: "capitalize" }}
+            className="justify-start"
+          >
+            <Link href={item.href}>
               <item.icon className={cn("h-5 w-5", isActive(item) ? "text-primary" : "")} />
               {sidebarState === "expanded" && (
                 <span className={cn(isActive(item) ? "font-semibold" : "")}>{item.label}</span>
               )}
-            </SidebarMenuButton>
-          </Link>
+            </Link>
+          </SidebarMenuButton>
         </SidebarMenuItem>
       ))}
     </SidebarMenu>
