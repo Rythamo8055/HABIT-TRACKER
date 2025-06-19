@@ -1,3 +1,4 @@
+// src/components/daily/DailyTimeline.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -9,10 +10,9 @@ import { CheckCircle, Clock, Zap, Calendar as CalendarIcon } from 'lucide-react'
 
 // Mock function to simulate fetching events
 const fetchEvents = async (date: Date): Promise<CalendarEvent[]> => {
-  // In a real app, this would fetch from a data source (local or remote)
-  await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500)); 
   const today = startOfDay(new Date());
-  if (!isSameDay(date, today)) return []; // Only show mock events for today
+  if (!isSameDay(date, today)) return []; 
 
   return [
     { id: '1', title: 'Morning Standup', startTime: addHours(today, 9).toISOString(), endTime: addHours(today, 9.5).toISOString(), source: 'synced_calendar', description: 'Team daily sync' },
@@ -38,6 +38,7 @@ export function DailyTimeline() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -47,12 +48,40 @@ export function DailyTimeline() {
     });
   }, [currentDate]);
 
+  useEffect(() => {
+    // Set initial time and update every minute
+    setCurrentTime(new Date());
+    const timerId = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timerId); // Cleanup interval on component unmount
+  }, []);
+
   // Create time slots for the day
   const timeSlots = Array.from({ length: 24 }, (_, i) => {
     const hour = startOfDay(currentDate);
     hour.setHours(i);
     return hour;
   });
+
+  const renderCurrentTimeIndicator = () => {
+    if (!currentTime || !isSameDay(currentDate, currentTime)) {
+      return null;
+    }
+    const minutesPastMidnight = currentTime.getHours() * 60 + currentTime.getMinutes();
+    const topOffsetRem = (minutesPastMidnight / 60) * 6; // 6rem per hour (h-24 for slot)
+
+    return (
+      <div
+        className="absolute left-16 right-0 ml-1 h-0.5 bg-red-500 z-10 flex items-center"
+        style={{ top: `${topOffsetRem}rem` }}
+        aria-label="Current time"
+      >
+        <div className="absolute -left-2 h-2 w-2 rounded-full bg-red-500 -translate-x-full"></div>
+      </div>
+    );
+  };
 
   return (
     <Card className="h-full flex flex-col">
@@ -67,7 +96,7 @@ export function DailyTimeline() {
             <p>Loading timeline...</p>
           </div>
         ) : (
-          <ScrollArea className="h-[calc(100vh-250px)] pr-4 relative"> {/* Adjust height as needed */}
+          <ScrollArea className="h-[calc(100vh-250px)] pr-4 relative"> 
             <div className="relative">
               {/* Render time slots and grid lines */}
               {timeSlots.map((slot, index) => (
@@ -81,20 +110,27 @@ export function DailyTimeline() {
                 </div>
               ))}
               
+              {/* Render current time indicator */}
+              {renderCurrentTimeIndicator()}
+
               {/* Render events */}
               {events.map(event => {
                 const start = parseISO(event.startTime);
                 const end = parseISO(event.endTime);
-                const topOffset = (start.getHours() + start.getMinutes() / 60) * 6; // 6rem per hour (24 * 0.25rem)
-                const height = ((end.getTime() - start.getTime()) / (1000 * 60 * 60)) * 6; // 6rem per hour
+                const startMinutesPastMidnight = start.getHours() * 60 + start.getMinutes();
+                const endMinutesPastMidnight = end.getHours() * 60 + end.getMinutes();
+
+                const topOffsetRem = (startMinutesPastMidnight / 60) * 6; 
+                const heightRem = ((endMinutesPastMidnight - startMinutesPastMidnight) / 60) * 6;
 
                 return (
                   <div
                     key={event.id}
                     className="absolute left-16 right-0 ml-2 p-2 rounded-lg shadow-md transition-all duration-300 ease-in-out hover:shadow-lg"
                     style={{ 
-                      top: `${topOffset}rem`, 
-                      height: `${height}rem`,
+                      top: `${topOffsetRem}rem`, 
+                      height: `${heightRem}rem`,
+                      minHeight: '2rem', // Ensure a minimum height for short events
                       backgroundColor: 'hsl(var(--primary) / 0.1)',
                       borderLeft: '4px solid hsl(var(--primary))',
                     }}
