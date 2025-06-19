@@ -1,102 +1,105 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Light Theme (Derived/Inspired by Catppuccin) */
-    --background: 10 56% 91%; /* Rosewater */
-    --foreground: 237 16% 23%; /* Surface0 (as dark text) */
+    /* Catppuccin Latte Theme */
+    --background: 220 27% 95%; /* Latte Base */
+    --foreground: 232 14% 35%; /* Latte Text */
 
-    --card: 0 59% 88%; /* Flamingo */
-    --card-foreground: 237 16% 23%; /* Surface0 */
+    --card: 223 25% 83%; /* Latte Surface1 */
+    --card-foreground: 232 14% 35%; /* Latte Text */
 
-    --popover: 10 56% 95%; /* Lighter Rosewater */
-    --popover-foreground: 237 16% 23%; /* Surface0 */
+    --popover: 224 26% 89%; /* Latte Surface0 */
+    --popover-foreground: 232 14% 35%; /* Latte Text */
 
-    --primary: 170 57% 73%; /* Teal */
-    --primary-foreground: 240 21% 15%; /* Base (dark text on Teal) */
+    --primary: 267 86% 58%; /* Latte Mauve */
+    --primary-foreground: 220 27% 95%; /* Latte Base (text on primary) */
 
-    --secondary: 316 72% 86%; /* Pink */
-    --secondary-foreground: 237 16% 23%; /* Surface0 */
+    --secondary: 319 74% 69%; /* Latte Pink */
+    --secondary-foreground: 220 27% 95%; /* Latte Base (text on secondary) */
 
-    --muted: 232 60% 92%; /* Lighter Lavender */
-    --muted-foreground: 230 13% 55%; /* Overlay1 */
+    --muted: 224 26% 89%; /* Latte Surface0 */
+    --muted-foreground: 228 17% 57%; /* Latte Overlay1 */
 
-    --accent: 267 84% 81%; /* Mauve */
-    --accent-foreground: 240 21% 15%; /* Base (dark text on Mauve) */
+    --accent: 0 71% 60%; /* Latte Flamingo */
+    --accent-foreground: 220 27% 95%; /* Latte Base (text on accent) */
 
-    --destructive: 343 81% 75%; /* Red */
-    --destructive-foreground: 240 21% 15%; /* Base */
+    --destructive: 347 87% 41%; /* Latte Red */
+    --destructive-foreground: 220 27% 95%; /* Latte Base */
 
-    --border: 227 35% 80%; /* Subtext1 */
-    --input: 228 24% 94%; /* Lighter Subtext0 */
-    --ring: 170 57% 73%; /* Teal */
+    --border: 229 18% 65%; /* Latte Overlay0 */
+    --input: 224 26% 89%; /* Latte Surface0 */
+    --ring: 267 86% 58%; /* Latte Mauve */
 
     --radius: 0.5rem;
 
-    /* Sidebar/BottomNav specific colors for light theme */
-    --sidebar-background: 10 56% 91%;
-    --sidebar-foreground: 237 16% 23%;
-    --sidebar-primary: 170 57% 73%;
-    --sidebar-primary-foreground: 240 21% 15%;
-    --sidebar-accent: 316 72% 86%;
-    --sidebar-accent-foreground: 237 16% 23%;
-    --sidebar-border: 227 35% 80%;
-    --sidebar-ring: 170 57% 73%;
+    /* Sidebar/BottomNav specific colors for light theme (Latte) */
+    --sidebar-background: 220 27% 95%; /* Latte Base */
+    --sidebar-foreground: 232 14% 35%; /* Latte Text */
+    --sidebar-primary: 267 86% 58%; /* Latte Mauve */
+    --sidebar-primary-foreground: 220 27% 95%; /* Latte Base */
+    --sidebar-accent: 223 25% 83%; /* Latte Surface1 */
+    --sidebar-accent-foreground: 232 14% 35%; /* Latte Text */
+    --sidebar-border: 229 18% 65%; /* Latte Overlay0 */
+    --sidebar-ring: 267 86% 58%; /* Latte Mauve */
 
-    --chart-1: 115 45% 60%; /* Green (slightly darker for light bg) */
-    --chart-2: 41 70% 70%;  /* Yellow (slightly darker) */
-    --chart-3: 23 80% 65%;  /* Peach (slightly darker) */
-    --chart-4: 350 55% 60%; /* Maroon (slightly darker) */
-    --chart-5: 343 70% 60%; /* Red (slightly darker) */
+    /* Catppuccin Latte Chart Colors */
+    --chart-1: 138 47% 58%; /* Latte Green */
+    --chart-2: 44 89% 65%;  /* Latte Yellow */
+    --chart-3: 20 84% 60%;  /* Latte Peach */
+    --chart-4: 344 68% 62%; /* Latte Maroon */
+    --chart-5: 319 74% 69%; /* Latte Pink */
   }
 
   .dark {
-    /* Dark Theme (Catppuccin Mocha) */
-    --background: 240 21% 15%; /* Base */
-    --foreground: 226 64% 88%; /* Text */
+    /* Catppuccin Mocha Theme */
+    --background: 240 21% 15%; /* Mocha Base */
+    --foreground: 226 64% 88%; /* Mocha Text */
 
-    --card: 240 21% 12%; /* Mantle */
-    --card-foreground: 226 64% 88%; /* Text */
+    --card: 240 21% 12%; /* Mocha Mantle */
+    --card-foreground: 226 64% 88%; /* Mocha Text */
 
-    --popover: 240 21% 12%; /* Mantle */
-    --popover-foreground: 226 64% 88%; /* Text */
+    --popover: 240 21% 12%; /* Mocha Mantle */
+    --popover-foreground: 226 64% 88%; /* Mocha Text */
 
-    --primary: 170 57% 73%; /* Teal */
-    --primary-foreground: 240 21% 15%; /* Base (for text on primary) */
+    --primary: 267 84% 81%; /* Mocha Mauve */
+    --primary-foreground: 240 21% 15%; /* Mocha Base (text on primary) */
 
-    --secondary: 237 16% 23%; /* Surface0 */
-    --secondary-foreground: 226 64% 88%; /* Text */
+    --secondary: 316 72% 86%; /* Mocha Pink (Using Pink as secondary instead of Surface0 for more color) */
+    --secondary-foreground: 240 21% 15%; /* Mocha Base */
 
-    --muted: 234 13% 31%; /* Surface1 */
-    --muted-foreground: 228 24% 72%; /* Subtext0 */
+    --muted: 234 13% 31%; /* Mocha Surface1 */
+    --muted-foreground: 228 24% 72%; /* Mocha Subtext0 */
 
-    --accent: 267 84% 81%; /* Mauve */
-    --accent-foreground: 240 21% 15%; /* Base (for text on accent) */
+    --accent: 170 57% 73%; /* Mocha Teal (Using Teal as accent) */
+    --accent-foreground: 240 21% 15%; /* Mocha Base (text on accent) */
 
-    --destructive: 343 81% 75%; /* Red */
-    --destructive-foreground: 240 21% 15%; /* Base (for text on destructive) */
+    --destructive: 343 81% 75%; /* Mocha Red */
+    --destructive-foreground: 240 21% 15%; /* Mocha Base (text on destructive) */
 
-    --border: 233 12% 39%; /* Surface2 */
-    --input: 237 16% 23%; /* Surface0 */
-    --ring: 170 57% 73%; /* Teal */
+    --border: 233 12% 39%; /* Mocha Surface2 */
+    --input: 237 16% 23%; /* Mocha Surface0 */
+    --ring: 267 84% 81%; /* Mocha Mauve */
 
-    /* Sidebar/BottomNav specific colors for dark theme */
-    --sidebar-background: 240 23% 9%; /* Crust */
-    --sidebar-foreground: 226 64% 88%;
-    --sidebar-primary: 170 57% 73%;
-    --sidebar-primary-foreground: 240 21% 15%;
-    --sidebar-accent: 234 13% 31%;
-    --sidebar-accent-foreground: 226 64% 88%;
-    --sidebar-border: 237 16% 23%;
-    --sidebar-ring: 170 57% 73%;
+    /* Sidebar/BottomNav specific colors for dark theme (Mocha) */
+    --sidebar-background: 240 23% 9%; /* Mocha Crust */
+    --sidebar-foreground: 226 64% 88%; /* Mocha Text */
+    --sidebar-primary: 267 84% 81%; /* Mocha Mauve */
+    --sidebar-primary-foreground: 240 21% 15%; /* Mocha Base */
+    --sidebar-accent: 234 13% 31%; /* Mocha Surface1 */
+    --sidebar-accent-foreground: 226 64% 88%; /* Mocha Text */
+    --sidebar-border: 237 16% 23%; /* Mocha Surface0 */
+    --sidebar-ring: 267 84% 81%; /* Mocha Mauve */
     
-    --chart-1: 115 54% 76%; /* Green */
-    --chart-2: 41 86% 83%;  /* Yellow */
-    --chart-3: 23 92% 75%;  /* Peach */
-    --chart-4: 350 65% 77%; /* Maroon */
-    --chart-5: 316 72% 86%; /* Pink (using Catppuccin Pink) */
+    /* Catppuccin Mocha Chart Colors */
+    --chart-1: 115 54% 76%; /* Mocha Green */
+    --chart-2: 41 86% 83%;  /* Mocha Yellow */
+    --chart-3: 23 92% 75%;  /* Mocha Peach */
+    --chart-4: 350 65% 77%; /* Mocha Maroon */
+    --chart-5: 316 72% 86%; /* Mocha Pink */
   }
 }
 

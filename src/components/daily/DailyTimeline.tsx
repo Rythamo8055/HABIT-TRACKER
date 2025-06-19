@@ -1,3 +1,4 @@
+
 // src/components/daily/DailyTimeline.tsx
 "use client";
 
@@ -11,21 +12,11 @@ import type { CalendarEvent, EventFormData } from '@/lib/types';
 import { EventForm } from './EventForm';
 import { format, startOfDay, addHours, isSameDay, parseISO, parse } from 'date-fns';
 import { CheckCircle, Clock, Zap, Calendar as CalendarIcon, PlusCircle, Edit3, Trash2 } from 'lucide-react';
+import { fetchEventsForDate, saveEventsForDate } from '@/lib/timeline-event-storage'; // Updated import
 
 // Mock function to simulate fetching events from localStorage
-const fetchEventsFromStorage = async (date: Date): Promise<CalendarEvent[]> => {
-  await new Promise(resolve => setTimeout(resolve, 100)); // Simulate async
-  const dateKey = format(date, 'yyyy-MM-dd');
-  const storedEvents = localStorage.getItem(`timeline_events_${dateKey}`);
-  if (storedEvents) {
-    try {
-      return JSON.parse(storedEvents) as CalendarEvent[];
-    } catch (e) {
-      console.error("Failed to parse events from localStorage", e);
-      return [];
-    }
-  }
-  // Return sample events only if it's today and no stored events
+// Replaced by fetchEventsForDate, but keeping sample data logic for initialization
+const getInitialSampleEvents = (date: Date): CalendarEvent[] => {
   const today = startOfDay(new Date());
    if (isSameDay(date, today)) {
     return [
@@ -38,12 +29,6 @@ const fetchEventsFromStorage = async (date: Date): Promise<CalendarEvent[]> => {
     ].sort((a, b) => parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime());
   }
   return [];
-};
-
-// Function to save events to localStorage
-const saveEventsToStorage = async (date: Date, events: CalendarEvent[]) => {
-  const dateKey = format(date, 'yyyy-MM-dd');
-  localStorage.setItem(`timeline_events_${dateKey}`, JSON.stringify(events));
 };
 
 
@@ -67,13 +52,25 @@ export function DailyTimeline() {
 
   useEffect(() => {
     setCurrentDate(startOfDay(new Date()));
+    setCurrentTime(new Date()); 
+    const timerId = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); 
+    return () => clearInterval(timerId);
   }, []);
 
   useEffect(() => {
     if (currentDate) {
       setIsLoadingEvents(true);
-      fetchEventsFromStorage(currentDate).then(fetchedEvents => {
-        setEvents(fetchedEvents.sort((a, b) => parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime()));
+      fetchEventsForDate(currentDate).then(fetchedEvents => {
+        if (fetchedEvents.length === 0 && isSameDay(currentDate, startOfDay(new Date())) && !localStorage.getItem(`timeline_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`)) {
+          const sampleEvents = getInitialSampleEvents(currentDate);
+          setEvents(sampleEvents);
+          saveEventsForDate(currentDate, sampleEvents); // Save samples
+          localStorage.setItem(`timeline_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`, 'true');
+        } else {
+          setEvents(fetchedEvents);
+        }
         setIsLoadingEvents(false);
       });
     }
@@ -81,17 +78,10 @@ export function DailyTimeline() {
 
   useEffect(() => {
     if (currentDate && !isLoadingEvents) {
-      saveEventsToStorage(currentDate, events);
+      saveEventsForDate(currentDate, events);
     }
   }, [events, currentDate, isLoadingEvents]);
 
-  useEffect(() => {
-    setCurrentTime(new Date()); // Set initial time
-    const timerId = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000); // Update every minute
-    return () => clearInterval(timerId);
-  }, []);
 
   const timeSlots = Array.from({ length: 24 }, (_, i) => {
     const baseDateForSlot = currentDate || startOfDay(new Date()); 
@@ -112,11 +102,11 @@ export function DailyTimeline() {
   };
 
   const handleFormSubmit = (data: EventFormData) => {
-    if (!currentDate) return; // Should not happen
-    // Ensure times are associated with the currentDate
-    const parsedStartTime = parse(data.startTime, "HH:mm", new Date());
-    const parsedEndTime = parse(data.endTime, "HH:mm", new Date());
+    if (!currentDate) return; 
 
+    const parsedStartTime = parse(data.startTime, "HH:mm", new Date(currentDate));
+    const parsedEndTime = parse(data.endTime, "HH:mm", new Date(currentDate));
+    
     const finalStartTime = new Date(currentDate);
     finalStartTime.setHours(parsedStartTime.getHours(), parsedStartTime.getMinutes(), 0, 0);
     
@@ -124,7 +114,7 @@ export function DailyTimeline() {
     finalEndTime.setHours(parsedEndTime.getHours(), parsedEndTime.getMinutes(), 0, 0);
 
     if (finalEndTime <= finalStartTime) {
-        alert("End time must be after start time."); // Or use a toast
+        alert("End time must be after start time.");
         return;
     }
     
@@ -142,7 +132,7 @@ export function DailyTimeline() {
         id: `event-${Date.now()}`,
         title: data.title,
         description: data.description,
-        source: data.source,
+        source: data.source, // This will be 'user_planned' from form
         startTime: startTimeISO,
         endTime: endTimeISO,
       };
@@ -160,7 +150,6 @@ export function DailyTimeline() {
       return null;
     }
     const minutesPastMidnight = currentTime.getHours() * 60 + currentTime.getMinutes();
-    // Each hour slot is 6rem (24 * 0.25rem per 15min segment), so 1 minute is 6rem / 60min = 0.1rem
     const topOffsetRem = minutesPastMidnight * 0.1;
 
 
@@ -234,14 +223,14 @@ export function DailyTimeline() {
             <p>Loading timeline...</p>
           </div>
         ) : (
-          <ScrollArea className="h-[calc(100vh-280px)] pr-4 relative"> {/* Ensure pr-4 doesn't cause issues if scrollbar is overlayed */}
-            <div className="relative"> {/* Container for time slots and events */}
+          <ScrollArea className="h-[calc(100vh-280px)] pr-4 relative">
+            <div className="relative"> 
               {timeSlots.map((slot, index) => (
-                <div key={index} className="flex items-start h-24 border-b border-dashed"> {/* 6rem = 96px, h-24 */}
+                <div key={index} className="flex items-start h-24 border-b border-dashed">
                   <div className="w-16 pr-2 text-right text-xs text-muted-foreground pt-1 sticky top-0 bg-card">
                     {format(slot, 'ha')}
                   </div>
-                  <div className="flex-1 relative"></div> {/* Event plotting area for this hour */}
+                  <div className="flex-1 relative"></div> 
                 </div>
               ))}
               
@@ -253,10 +242,9 @@ export function DailyTimeline() {
                 const startMinutesPastMidnight = start.getHours() * 60 + start.getMinutes();
                 const endMinutesPastMidnight = end.getHours() * 60 + end.getMinutes();
 
-                // Each hour is 6rem. 1 minute = 0.1rem
                 const topOffsetRem = startMinutesPastMidnight * 0.1; 
                 const durationMinutes = endMinutesPastMidnight - startMinutesPastMidnight;
-                const heightRem = Math.max(durationMinutes * 0.1, 1.5); // Min height of 1.5rem for visibility
+                const heightRem = Math.max(durationMinutes * 0.1, 1.5); 
 
                 return (
                   <div

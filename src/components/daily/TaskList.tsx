@@ -12,29 +12,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay, type Active } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { format, addDays, startOfDay, parseISO } from 'date-fns'; // Ensured parseISO is imported
-
-// Mock function to simulate fetching tasks
-const fetchTasks = async (date: string): Promise<Task[]> => {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  const storedTasks = localStorage.getItem(`tasks_${date}`);
-  if (storedTasks) return JSON.parse(storedTasks);
-  
-  // Sample tasks for today
-  if (date === format(startOfDay(new Date()), 'yyyy-MM-dd')) {
-    return [
-      { id: 'task-1', text: 'Review PR #123', isCompleted: false, dueDate: date, createdAt: Date.now() - 100000 },
-      { id: 'task-2', text: 'Draft project proposal', isCompleted: false, dueDate: date, createdAt: Date.now() - 50000 },
-      { id: 'task-3', text: 'Follow up with Jane Doe', isCompleted: true, dueDate: date, createdAt: Date.now() - 200000 },
-    ];
-  }
-  return [];
-};
-
-// Mock function to save tasks
-const saveTasks = async (date: string, tasks: Task[]) => {
-  localStorage.setItem(`tasks_${date}`, JSON.stringify(tasks));
-};
+import { format, addDays, startOfDay, parseISO } from 'date-fns';
+import { fetchTasksForDate, saveTasksForDate, addTaskToDate as addTaskToStorageDate } from '@/lib/task-storage'; // Updated import
 
 interface SortableTaskItemProps {
   task: Task;
@@ -58,7 +37,7 @@ function SortableTaskItem({ task, onToggleComplete, onDeleteTask, onEditTask }: 
     if (isEditing && editText.trim() !== task.text && editText.trim() !== '') {
       onEditTask(task.id, editText.trim());
     } else if (isEditing && editText.trim() === '') {
-      setEditText(task.text); // Reset if submitted empty
+      setEditText(task.text); 
     }
     setIsEditing(!isEditing);
   };
@@ -94,6 +73,7 @@ function SortableTaskItem({ task, onToggleComplete, onDeleteTask, onEditTask }: 
           id={`task-label-${task.id}`}
           htmlFor={`task-${task.id}`}
           className={`flex-grow cursor-pointer ${task.isCompleted ? 'line-through text-muted-foreground' : ''}`}
+          onClick={() => !task.isCompleted && setIsEditing(true)} // Allow editing by clicking label
         >
           {task.text}
         </label>
@@ -113,23 +93,33 @@ export function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskText, setNewTaskText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [currentDateKey, setCurrentDateKey] = useState(format(startOfDay(new Date()), 'yyyy-MM-dd'));
+  const [currentDate, setCurrentDate] = useState(startOfDay(new Date())); // Store as Date object
   const [activeDragItem, setActiveDragItem] = useState<Active | null>(null);
-
 
   useEffect(() => {
     setIsLoading(true);
-    fetchTasks(currentDateKey).then(fetchedTasks => {
-      setTasks(fetchedTasks.sort((a,b) => a.createdAt - b.createdAt));
+    fetchTasksForDate(currentDate).then(fetchedTasks => {
+      // Sample tasks only if it's today and no stored tasks, and only if it's the first load for today
+      if (format(currentDate, 'yyyy-MM-dd') === format(startOfDay(new Date()), 'yyyy-MM-dd') && fetchedTasks.length === 0 && !localStorage.getItem(`tasks_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`)) {
+        const sampleTasks: Task[] = [
+          { id: 'task-1', text: 'Review PR #123', isCompleted: false, dueDate: format(currentDate, 'yyyy-MM-dd'), createdAt: Date.now() - 100000 },
+          { id: 'task-2', text: 'Draft project proposal', isCompleted: false, dueDate: format(currentDate, 'yyyy-MM-dd'), createdAt: Date.now() - 50000 },
+          { id: 'task-3', text: 'Follow up with Jane Doe', isCompleted: true, dueDate: format(currentDate, 'yyyy-MM-dd'), createdAt: Date.now() - 200000 },
+        ];
+        setTasks(sampleTasks.sort((a,b) => a.createdAt - b.createdAt));
+        localStorage.setItem(`tasks_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`, 'true');
+      } else {
+        setTasks(fetchedTasks);
+      }
       setIsLoading(false);
     });
-  }, [currentDateKey]);
+  }, [currentDate]);
 
   useEffect(() => {
     if (!isLoading) {
-      saveTasks(currentDateKey, tasks);
+      saveTasksForDate(currentDate, tasks);
     }
-  }, [tasks, currentDateKey, isLoading]);
+  }, [tasks, currentDate, isLoading]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -138,16 +128,10 @@ export function TaskList() {
     })
   );
 
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
     if (newTaskText.trim() === '') return;
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
-      text: newTaskText.trim(),
-      isCompleted: false,
-      dueDate: currentDateKey,
-      createdAt: Date.now(),
-    };
-    setTasks(prevTasks => [...prevTasks, newTask]);
+    const addedTask = await addTaskToStorageDate(currentDate, { text: newTaskText.trim(), isCompleted: false });
+    setTasks(prevTasks => [...prevTasks, addedTask].sort((a,b) => a.createdAt - b.createdAt));
     setNewTaskText('');
   };
 
@@ -171,23 +155,23 @@ export function TaskList() {
     );
   };
 
-  const handleMigrateTasks = () => {
+  const handleMigrateTasks = async () => {
     const incompleteTasks = tasks.filter(task => !task.isCompleted);
     if (incompleteTasks.length === 0) {
       alert("No incomplete tasks to migrate.");
       return;
     }
-    const currentParsedDate = parseISO(currentDateKey); // Make sure parseISO is in scope
-    const nextDayKey = format(addDays(currentParsedDate, 1), 'yyyy-MM-dd');
+    
+    const nextDay = addDays(currentDate, 1);
     
     const completedTasks = tasks.filter(task => task.isCompleted);
-    setTasks(completedTasks); 
+    setTasks(completedTasks); // Keep completed tasks for the current day
 
-    fetchTasks(nextDayKey).then(nextDayTasks => {
-      const migratedTasks = incompleteTasks.map(task => ({ ...task, dueDate: nextDayKey, createdAt: Date.now() })); // Update createdAt for new sort order
-      saveTasks(nextDayKey, [...nextDayTasks, ...migratedTasks].sort((a,b) => a.createdAt - b.createdAt));
-      alert(`${incompleteTasks.length} task(s) migrated to ${format(parseISO(nextDayKey), 'MMM do')}.`);
-    });
+    const nextDayExistingTasks = await fetchTasksForDate(nextDay);
+    const migratedTasks = incompleteTasks.map(task => ({ ...task, dueDate: format(nextDay, 'yyyy-MM-dd'), createdAt: Date.now() }));
+    
+    await saveTasksForDate(nextDay, [...nextDayExistingTasks, ...migratedTasks].sort((a,b) => a.createdAt - b.createdAt));
+    alert(`${incompleteTasks.length} task(s) migrated to ${format(nextDay, 'MMM do')}.`);
   };
 
   function handleDragStart(event: any) {
@@ -197,10 +181,11 @@ export function TaskList() {
   function handleDragEnd(event: any) {
     setActiveDragItem(null);
     const { active, over } = event;
-    if (active.id !== over.id) {
+    if (over && active.id !== over.id) {
       setTasks((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
+        if (oldIndex === -1 || newIndex === -1) return items; // Should not happen
         return arrayMove(items, oldIndex, newIndex);
       });
     }
@@ -211,7 +196,7 @@ export function TaskList() {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="font-headline text-xl">Actionable Tasks</CardTitle>
+        <CardTitle className="font-headline text-xl">Tasks for {format(currentDate, 'MMM do')}</CardTitle>
         <Button variant="outline" size="sm" onClick={handleMigrateTasks} disabled={!tasks.some(t => !t.isCompleted)}>
           <ChevronsRight className="mr-2 h-4 w-4" /> Migrate Incomplete
         </Button>
@@ -234,7 +219,7 @@ export function TaskList() {
           <p>Loading tasks...</p>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <ScrollArea className="flex-grow h-[calc(100vh-350px)]"> {/* Adjust height as needed */}
+            <ScrollArea className="flex-grow h-[calc(100vh-350px)]">
               {tasks.length === 0 ? (
                 <p className="text-muted-foreground text-center py-4">No tasks for today. Add some!</p>
               ) : (

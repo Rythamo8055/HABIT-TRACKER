@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -10,9 +11,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { goalDecomposition, GoalDecompositionInput, GoalDecompositionOutput } from '@/ai/flows/goal-decomposition';
 import { DecomposedTask } from '@/lib/types';
-import { Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle, AlertTriangle, PlusSquare } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { addTaskToDate } from '@/lib/task-storage';
+import { startOfDay } from 'date-fns';
 
 const formSchema = z.object({
   goal: z.string().min(10, { message: "Goal description must be at least 10 characters." }).max(500, { message: "Goal description must be at most 500 characters." }),
@@ -20,11 +23,12 @@ const formSchema = z.object({
 
 type GoalDecompositionFormValues = z.infer<typeof formSchema>;
 
-interface GoalDecompositionFormProps {
-  onSuccessfulDecomposition?: (tasks: DecomposedTask[]) => void;
-}
+// We don't use onSuccessfulDecomposition prop anymore for direct task adding.
+// interface GoalDecompositionFormProps {
+//   onSuccessfulDecomposition?: (tasks: DecomposedTask[]) => void;
+// }
 
-export function GoalDecompositionForm({ onSuccessfulDecomposition }: GoalDecompositionFormProps) {
+export function GoalDecompositionForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [decomposedTasks, setDecomposedTasks] = useState<DecomposedTask[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +41,24 @@ export function GoalDecompositionForm({ onSuccessfulDecomposition }: GoalDecompo
     },
   });
 
+  const handleAddTaskToTodaysList = async (taskText: string) => {
+    try {
+      const today = startOfDay(new Date());
+      await addTaskToDate(today, { text: taskText, isCompleted: false });
+      toast({
+        title: "Task Added",
+        description: `"${taskText}" added to today's tasks.`,
+      });
+    } catch (e) {
+      console.error("Error adding task:", e);
+      toast({
+        title: "Error",
+        description: "Could not add task to today's list.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const onSubmit: SubmitHandler<GoalDecompositionFormValues> = async (data) => {
     setIsLoading(true);
     setDecomposedTasks(null);
@@ -45,7 +67,6 @@ export function GoalDecompositionForm({ onSuccessfulDecomposition }: GoalDecompo
       const input: GoalDecompositionInput = { goal: data.goal };
       const result: GoalDecompositionOutput = await goalDecomposition(input);
       
-      // The output 'plan' is a JSON string, so we need to parse it.
       let parsedTasks: DecomposedTask[] = [];
       try {
         parsedTasks = JSON.parse(result.plan);
@@ -60,17 +81,17 @@ export function GoalDecompositionForm({ onSuccessfulDecomposition }: GoalDecompo
           description: "Could not parse AI response. Please try rephrasing your goal.",
           variant: "destructive",
         });
-        parsedTasks = []; // Set to empty array on parse error
+        parsedTasks = [];
       }
 
       setDecomposedTasks(parsedTasks);
-      if (parsedTasks.length > 0 && onSuccessfulDecomposition) {
-        onSuccessfulDecomposition(parsedTasks);
-      }
+      // if (parsedTasks.length > 0 && onSuccessfulDecomposition) { // Prop removed
+      //   onSuccessfulDecomposition(parsedTasks);
+      // }
        if (parsedTasks.length > 0) {
         toast({
           title: "Goal Decomposed!",
-          description: "Your goal has been broken down into actionable tasks.",
+          description: "Your goal has been broken down. You can add tasks to your daily list.",
         });
       }
 
@@ -140,9 +161,22 @@ export function GoalDecompositionForm({ onSuccessfulDecomposition }: GoalDecompo
           <ScrollArea className="h-[200px] pr-3">
             <ul className="space-y-3">
               {decomposedTasks.map((item, index) => (
-                <li key={index} className="p-3 bg-muted/50 rounded-md text-sm">
-                  <p className="font-semibold text-primary">{item.task}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{item.reason}</p>
+                <li key={index} className="p-3 bg-muted/50 rounded-md text-sm group">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold text-primary">{item.task}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{item.reason}</p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2"
+                      onClick={() => handleAddTaskToTodaysList(item.task)}
+                      title="Add to today's tasks"
+                    >
+                      <PlusSquare className="h-4 w-4 mr-1" /> Add
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
