@@ -6,13 +6,13 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { CalendarEvent, EventFormData } from '@/lib/types';
 import { EventForm } from './EventForm';
 import { format, startOfDay, addHours, isSameDay, parseISO, parse } from 'date-fns';
 import { CheckCircle, Clock, Zap, Calendar as CalendarIcon, PlusCircle, Edit3, Trash2 } from 'lucide-react';
-import { fetchEventsForDate, saveEventsForDate } from '@/lib/timeline-event-storage'; 
+import { fetchEventsForDate, saveEventsForDate } from '@/lib/timeline-event-storage';
 import { cn } from '@/lib/utils';
 
 const getInitialSampleEvents = (date: Date): CalendarEvent[] => {
@@ -45,16 +45,16 @@ export function DailyTimeline() {
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
-  const [currentTime, setCurrentTime] = useState<Date | null>(null);
+  const [currentTimeLine, setCurrentTimeLine] = useState<Date | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
   useEffect(() => {
     setCurrentDate(startOfDay(new Date()));
-    setCurrentTime(new Date()); 
+    setCurrentTimeLine(new Date());
     const timerId = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000); 
+      setCurrentTimeLine(new Date());
+    }, 60000);
     return () => clearInterval(timerId);
   }, []);
 
@@ -65,7 +65,7 @@ export function DailyTimeline() {
         if (fetchedEvents.length === 0 && isSameDay(currentDate, startOfDay(new Date())) && !localStorage.getItem(`timeline_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`)) {
           const sampleEvents = getInitialSampleEvents(currentDate);
           setEvents(sampleEvents);
-          saveEventsForDate(currentDate, sampleEvents); 
+          saveEventsForDate(currentDate, sampleEvents);
           localStorage.setItem(`timeline_initial_samples_loaded_${format(currentDate, 'yyyy-MM-dd')}`, 'true');
         } else {
           setEvents(fetchedEvents);
@@ -83,7 +83,7 @@ export function DailyTimeline() {
 
 
   const timeSlots = Array.from({ length: 24 }, (_, i) => {
-    const baseDateForSlot = currentDate || startOfDay(new Date()); 
+    const baseDateForSlot = currentDate || startOfDay(new Date());
     const hour = startOfDay(baseDateForSlot);
     hour.setHours(i);
     return hour;
@@ -101,14 +101,14 @@ export function DailyTimeline() {
   };
 
   const handleFormSubmit = (data: EventFormData) => {
-    if (!currentDate) return; 
+    if (!currentDate) return;
 
     const parsedStartTime = parse(data.startTime, "HH:mm", new Date(currentDate));
     const parsedEndTime = parse(data.endTime, "HH:mm", new Date(currentDate));
-    
+
     const finalStartTime = new Date(currentDate);
     finalStartTime.setHours(parsedStartTime.getHours(), parsedStartTime.getMinutes(), 0, 0);
-    
+
     const finalEndTime = new Date(currentDate);
     finalEndTime.setHours(parsedEndTime.getHours(), parsedEndTime.getMinutes(), 0, 0);
 
@@ -116,7 +116,7 @@ export function DailyTimeline() {
         alert("End time must be after start time.");
         return;
     }
-    
+
     const startTimeISO = finalStartTime.toISOString();
     const endTimeISO = finalEndTime.toISOString();
 
@@ -131,7 +131,7 @@ export function DailyTimeline() {
         id: `event-${Date.now()}`,
         title: data.title,
         description: data.description,
-        source: data.source, 
+        source: data.source,
         startTime: startTimeISO,
         endTime: endTimeISO,
       };
@@ -145,24 +145,22 @@ export function DailyTimeline() {
   };
 
   const renderCurrentTimeIndicator = () => {
-    if (!currentTime || !currentDate || !isSameDay(currentDate, currentTime)) {
+    if (!currentTimeLine || !currentDate || !isSameDay(currentDate, currentTimeLine)) {
       return null;
     }
-    const minutesPastMidnight = currentTime.getHours() * 60 + currentTime.getMinutes();
-    const topOffsetRem = minutesPastMidnight * (24 * 4 / (24 * 60)); // 24rem total height / 24h * 60min
-
-
+    const minutesPastMidnight = currentTimeLine.getHours() * 60 + currentTimeLine.getMinutes();
+    
     return (
       <div
         className="absolute left-16 right-0 ml-1 h-0.5 bg-red-500 z-10 flex items-center"
-        style={{ top: `${minutesPastMidnight / 60 * 6}rem` }} // Each hour slot is 6rem high
+        style={{ top: `${minutesPastMidnight / 60 * 6}rem` }}
         aria-label="Current time"
       >
         <div className="absolute -left-2 h-2 w-2 rounded-full bg-red-500 -translate-x-full"></div>
       </div>
     );
   };
-  
+
   if (!currentDate) {
     return (
       <Card className={cn(
@@ -214,9 +212,9 @@ export function DailyTimeline() {
               <DialogTitle className="font-headline">{editingEvent ? 'Edit Event' : 'Add New Event'}</DialogTitle>
             </DialogHeader>
             {currentDate && (
-              <EventForm 
-                onSubmit={handleFormSubmit} 
-                onCancel={handleCloseForm} 
+              <EventForm
+                onSubmit={handleFormSubmit}
+                onCancel={handleCloseForm}
                 initialData={editingEvent || undefined}
                 currentDate={currentDate}
               />
@@ -231,16 +229,16 @@ export function DailyTimeline() {
           </div>
         ) : (
           <ScrollArea className="h-[calc(100vh-280px)] md:pr-4 relative">
-            <div className="relative px-4 md:px-0"> 
+            <div className="relative px-4 md:px-0">
               {timeSlots.map((slot, index) => (
                 <div key={index} className="flex items-start h-24 border-b border-dashed">
                   <div className="w-16 pr-2 text-right text-xs text-muted-foreground pt-1 sticky top-0 bg-inherit md:bg-card">
                     {format(slot, 'ha')}
                   </div>
-                  <div className="flex-1 relative"></div> 
+                  <div className="flex-1 relative"></div>
                 </div>
               ))}
-              
+
               {renderCurrentTimeIndicator()}
 
               {events.map(event => {
@@ -249,16 +247,16 @@ export function DailyTimeline() {
                 const startMinutesPastMidnight = start.getHours() * 60 + start.getMinutes();
                 const endMinutesPastMidnight = end.getHours() * 60 + end.getMinutes();
 
-                const topOffsetRem = startMinutesPastMidnight / 60 * 6; 
+                const topOffsetRem = startMinutesPastMidnight / 60 * 6;
                 const durationMinutes = endMinutesPastMidnight - startMinutesPastMidnight;
-                const heightRem = Math.max(durationMinutes / 60 * 6, 1.5); 
+                const heightRem = Math.max(durationMinutes / 60 * 6, 1.5);
 
                 return (
                   <div
                     key={event.id}
                     className="absolute left-16 right-0 ml-2 p-2 rounded-lg shadow-md group"
-                    style={{ 
-                      top: `${topOffsetRem}rem`, 
+                    style={{
+                      top: `${topOffsetRem}rem`,
                       height: `${heightRem}rem`,
                       backgroundColor: 'hsl(var(--primary) / 0.1)',
                       borderLeft: '4px solid hsl(var(--primary))',
